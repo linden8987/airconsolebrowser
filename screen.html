@@ -65,15 +65,18 @@
       text-overflow: ellipsis;
     }
 
-    /* Core Layout Viewport Container */
+    /* Core Layout Viewport Container with safe parent scrolling */
     #viewport-container {
       flex-grow: 1;
       position: relative;
       background: #090a0f;
+      overflow-y: auto; 
+      scroll-behavior: smooth;
     }
+    
     #browser-frame {
       width: 100%;
-      height: 100%;
+      height: 6000px; 
       border: none;
       background: #ffffff;
       display: none;
@@ -89,6 +92,7 @@
       justify-content: center;
       box-sizing: border-box;
       padding: 40px;
+      background: #090a0f;
     }
 
     /* Phase 1: Suggestion UI Dashboard */
@@ -161,9 +165,9 @@
       font-weight: 900;
     }
 
-    /* Real-Time Flash Alerts */
+    /* Floating HUD Alerts */
     #scroll-notice {
-      position: absolute;
+      position: fixed;
       bottom: 20px;
       right: 20px;
       background: rgba(66, 133, 244, 0.95);
@@ -174,6 +178,7 @@
       box-shadow: 0 4px 15px rgba(66, 133, 244, 0.4);
       display: none;
       pointer-events: none;
+      z-index: 100;
     }
 
     @keyframes popIn {
@@ -188,7 +193,7 @@
     <div id="logo">
       <span class="g-blue">T</span><span class="g-red">o</span><span class="g-yellow">g</span><span class="g-blue">e</span><span class="g-green">t</span><span class="g-red">h</span><span class="g-blue">e</span><span class="g-green">r</span> Browser
     </div>
-    <div id="game-state-banner" id="state-label">SUGGESTIONS OPEN</div>
+    <div id="game-state-banner">SUGGESTIONS OPEN</div>
     <div id="address-bar-container">
       <div id="address-bar">google://waiting_for_queries</div>
     </div>
@@ -212,12 +217,14 @@
         </div>
     </div>
 
-    <div id="scroll-notice">SCROLL EVENT</div>
   </div>
+
+  <div id="scroll-notice">SCROLL EVENT</div>
 
   <script>
     const airconsole = new AirConsole();
     
+    const viewportContainer = document.getElementById("viewport-container");
     const frame = document.getElementById("browser-frame");
     const addressBar = document.getElementById("address-bar");
     const stateBanner = document.getElementById("game-state-banner");
@@ -253,6 +260,12 @@
     airconsole.onMessage = function(device_id, data) {
       if (!data || !data.action) return;
 
+      // Anti-Infinite Loading Safety Valve: Explicit Request Sync Hook
+      if (data.action === "request_state_recovery") {
+        updateControllerState(device_id);
+        return;
+      }
+
       // Handle Input Submissions Phase
       if (data.action === "submit_query" && currentGameState === "SUGGESTING") {
         const cleanedText = data.text.trim();
@@ -271,6 +284,8 @@
         node.className = "suggestion-card";
         node.innerText = `🔍 ${cleanedText}`;
         suggestionList.appendChild(node);
+        
+        broadcastStateChange();
       }
 
       // Handle Progression Shifts out of Suggestion Phase
@@ -297,13 +312,14 @@
           item.votes++;
           item.voters.push(device_id);
           renderVotingLayout();
+          broadcastStateChange();
         }
       }
 
-      // Handle Progression Shift into Active Specialized Google Browsing
+      // Handle Progression Shift into Active Google Browsing
       if (data.action === "reveal_winner" && currentGameState === "VOTING") {
         searchSuggestions.sort((a, b) => b.votes - a.votes);
-        const winningQuery = searchSuggestions[0].text;
+        const winningQuery = searchSuggestions.length > 0 ? searchSuggestions[0].text : "AirConsole";
 
         currentGameState = "BROWSING";
         stateBanner.innerText = "GOOGLE LIVE";
@@ -312,7 +328,6 @@
         panelVoting.style.display = "none";
         frame.style.display = "block";
 
-        // Specialized Google parameters bypass frame defense blocks flawlessly
         const destinationUrl = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(winningQuery);
         addressBar.innerText = destinationUrl;
         frame.src = destinationUrl;
@@ -320,17 +335,16 @@
         broadcastStateChange();
       }
 
-      // Handle Browser Frame Fluid Scrolling Actions
+      // Safe container scrolling avoiding all cross-origin frame exceptions
       if (data.action === "scroll" && currentGameState === "BROWSING") {
         const scrollerName = airconsole.getNickname(device_id) || `User ${device_id}`;
         flashScrollNotice(`${scrollerName} SCROLLING`);
         
+        const scrollOffset = 260;
         if (data.direction === "up") {
-          frame.contentWindow?.scrollBy(0, -180);
-          window.scrollBy(0, -180);
+          viewportContainer.scrollBy({ top: -scrollOffset, behavior: 'smooth' });
         } else if (data.direction === "down") {
-          frame.contentWindow?.scrollBy(0, 180);
-          window.scrollBy(0, 180);
+          viewportContainer.scrollBy({ top: scrollOffset, behavior: 'smooth' });
         }
       }
 
@@ -351,20 +365,30 @@
         frame.style.display = "none";
         panelSuggesting.style.display = "flex";
         panelVoting.style.display = "none";
+        viewportContainer.scrollTop = 0; 
         
         broadcastStateChange();
       }
     };
 
+    // Bugfix: Safe DOM generation technique prevents simultaneous input race freezes
     function renderVotingLayout() {
       votingGrid.innerHTML = "";
       searchSuggestions.forEach(opt => {
-        votingGrid.innerHTML += `
-          <div class="voting-option">
-            <span class="option-text">🔍 ${opt.text}</span>
-            <span class="option-votes">${opt.votes}</span>
-          </div>
-        `;
+        const row = document.createElement("div");
+        row.className = "voting-option";
+
+        const label = document.createElement("span");
+        label.className = "option-text";
+        label.innerText = `🔍 ${opt.text}`;
+
+        const badge = document.createElement("span");
+        badge.className = "option-votes";
+        badge.innerText = opt.votes;
+
+        row.appendChild(label);
+        row.appendChild(badge);
+        votingGrid.appendChild(row);
       });
     }
 
