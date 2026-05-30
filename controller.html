@@ -3,173 +3,236 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Marble Blast Arena - Controller</title>
+  <title>Together Browser - Controller</title>
   <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #0d111a;
+      background-color: #07090e;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
-      display: flex;
       height: 100vh;
       box-sizing: border-box;
+      color: #ffffff;
     }
-    .panel {
-      display: flex;
+
+    .screen-view {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      width: 50%;
-      height: 100%;
-      position: relative;
+      padding: 20px;
+      box-sizing: border-box;
     }
-    .left-panel {
-      border-right: 2px solid #1a2333;
-    }
-    /* D-PAD Engine Visual Components */
-    .dpad {
-      position: relative;
-      width: 210px;
-      height: 210px;
-    }
+    
+    /* Core Layout Global Interactive Buttons */
     .btn {
-      position: absolute;
-      background-color: #161f30;
+      background: #111524;
       border: 3px solid #00ffcc;
-      border-radius: 14px;
+      border-radius: 16px;
       color: #00ffcc;
-      font-size: 26px;
+      font-size: 20px;
       font-weight: bold;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
+      box-shadow: 0 4px 15px rgba(0, 255, 204, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 20px;
+      width: 80%;
+      max-width: 400px;
+      margin: 10px 0;
+      text-align: center;
     }
     .btn:active {
       background-color: #00ffcc;
-      color: #0d111a;
+      color: #07090e;
     }
-    #btn-up { top: 0; left: 70px; width: 70px; height: 70px; }
-    #btn-down { bottom: 0; left: 70px; width: 70px; height: 70px; }
-    #btn-left { top: 70px; left: 0; width: 70px; height: 70px; }
-    #btn-right { top: 70px; right: 0; width: 70px; height: 70px; }
-    #dpad-center { top: 70px; left: 70px; width: 70px; height: 70px; background-color: #0d111a; border: none; }
 
-    /* Action Trigger Interface Panel Components */
-    #action-button {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      background-color: #221a30;
-      border: 5px solid #888888;
-      color: #888888;
-      font-size: 20px;
-      font-weight: 900;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-      transition: all 0.15s ease;
-      text-transform: uppercase;
-    }
-    
-    /* Dynamic UI State Modification Styles */
-    #action-button.ready-jump {
+    /* Override System Modifiers */
+    .admin-btn {
       border-color: #ffaa00;
       color: #ffaa00;
-      background-color: #3d2800;
-      box-shadow: 0 0 25px rgba(255, 170, 0, 0.5);
+      box-shadow: 0 4px 15px rgba(255, 170, 0, 0.15);
+      font-size: 16px;
+      padding: 12px;
+      margin-top: 25px;
     }
-    #action-button.ready-speed {
-      border-color: #00ff green;
-      border-color: #00ff00;
-      color: #00ff00;
-      background-color: #003d00;
-      box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+    .admin-btn:active {
+      background-color: #ffaa00;
+      color: #07090e;
     }
-    #action-button.ready-blast {
-      border-color: #ff00ff;
-      color: #ff00ff;
-      background-color: #3d003d;
-      box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
+    .reset-btn {
+      border-color: #ff0055;
+      color: #ff0055;
+      box-shadow: 0 4px 15px rgba(255, 0, 85, 0.15);
+    }
+    .reset-btn:active {
+      background-color: #ff0055;
+      color: #07090e;
+    }
+
+    /* Voting Mode Dynamic Selection Engine Layout */
+    #vote-options-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      max-height: 75vh;
+      gap: 10px;
+    }
+    .vote-choice-btn {
+      border-color: #ff0077;
+      color: #ff0077;
+      box-shadow: 0 4px 15px rgba(255, 0, 119, 0.1);
+    }
+    .vote-choice-btn:active {
+      background-color: #ff0077;
+      color: #07090e;
+    }
+
+    /* Navigation Fluid Scrolling Engine Panel */
+    .scroll-row {
+      display: flex;
+      gap: 20px;
+      width: 90%;
+      justify-content: center;
+    }
+    .scroll-btn {
+      flex: 1;
+      height: 120px;
+      font-size: 38px;
+      border-color: #00bfff;
+      color: #00bfff;
+      box-shadow: 0 4px 15px rgba(0, 191, 255, 0.15);
+    }
+    .scroll-btn:active {
+      background-color: #00bfff;
+      color: #07090e;
+    }
+
+    .status-text {
+      color: #63728a;
+      font-size: 16px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 1px;
     }
   </style>
 </head>
 <body>
 
-  <div class="panel left-panel">
-    <div class="dpad">
-      <div id="btn-up" class="btn">▲</div>
-      <div id="btn-left" class="btn">◀</div>
-      <div id="dpad-center"></div>
-      <div id="btn-right" class="btn">▶</div>
-      <div id="btn-down" class="btn">▼</div>
-    </div>
+  <div id="view-suggesting" class="screen-view">
+    <div class="status-text">Phase 1: Idea Gathering</div>
+    <div id="action-type-query" class="btn">⌨️ Suggest Search Term</div>
+    <div id="action-go-to-voting" class="btn admin-btn">Lock Inputs & Start Vote ➔</div>
   </div>
 
-  <div class="panel">
-    <div id="action-button">EMPTY</div>
+  <div id="view-voting" class="screen-view">
+    <div class="status-text" id="vote-header-status">Phase 2: Cast Your Ballot</div>
+    <div id="vote-options-container">
+      </div>
+    <div id="action-go-to-browsing" class="btn admin-btn" style="border-color: #ffaa00; color: #ffaa00;">Calculate Winner & Launch ➔</div>
+  </div>
+
+  <div id="view-browsing" class="screen-view">
+    <div class="status-text">Phase 3: Live Co-Browsing</div>
+    <div class="scroll-row">
+      <div id="scroll-up" class="btn scroll-btn">▲</div>
+      <div id="scroll-down" class="btn scroll-btn">▼</div>
+    </div>
+    <div id="action-reset" class="btn admin-btn reset-btn">♻️ Start Brand New Round</div>
   </div>
 
   <script>
+    // Force standard modern horizontal presentation setup layout
     const airconsole = new AirConsole({ orientation: AirConsole.ORIENTATION_LANDSCAPE });
-    const actionBtn = document.getElementById("action-button");
 
-    function bindDirection(elementId, directionStr) {
-      const el = document.getElementById(elementId);
-      
-      const sendInput = (isPressed) => {
-        airconsole.message(AirConsole.SCREEN, {
-          action: "input",
-          dir: directionStr,
-          value: isPressed
+    // Document Elements Links Cache Map
+    const views = {
+      SUGGESTING: document.getElementById("view-suggesting"),
+      VOTING: document.getElementById("view-voting"),
+      BROWSING: document.getElementById("view-browsing")
+    };
+    const voteOptionsContainer = document.getElementById("vote-options-container");
+    const voteHeaderStatus = document.getElementById("vote-header-status");
+
+    // Network Sync Triggers
+    airconsole.onMessage = function(device_id, data) {
+      if (!data || data.action !== "sync_state") return;
+
+      // Swap structural view layouts entirely
+      for (let stateKey in views) {
+        views[stateKey].style.display = (stateKey === data.state) ? "flex" : "none";
+      }
+
+      // Build out custom choices buttons array maps if system is inside Voting phase
+      if (data.state === "VOTING" && data.options) {
+        voteOptionsContainer.innerHTML = "";
+        data.options.forEach(opt => {
+          const btn = document.createElement("div");
+          btn.className = "btn vote-choice-btn";
+          btn.innerText = opt.text;
+          
+          const castVoteEvent = (e) => {
+            e.preventDefault();
+            airconsole.message(AirConsole.SCREEN, { action: "cast_vote", optionId: opt.id });
+            voteOptionsContainer.innerHTML = "<div class='status-text' style='color:#ff0077;'>Vote recorded! Waiting for host...</div>";
+          };
+          btn.addEventListener("touchstart", castVoteEvent);
+          btn.addEventListener("mousedown", castVoteEvent);
+          
+          voteOptionsContainer.appendChild(btn);
         });
-      };
+      }
+    };
 
-      el.addEventListener("touchstart", (e) => { e.preventDefault(); sendInput(true); });
-      el.addEventListener("touchend", (e) => { e.preventDefault(); sendInput(false); });
-      
-      // Fallback handlers for testing inside simulation window layout frames directly
-      el.addEventListener("mousedown", () => { sendInput(true); });
-      el.addEventListener("mouseup", () => { sendInput(false); });
+    // UI Configuration Event Binding Pipeline Setup
+    function bindClick(elementId, messageObject) {
+      const el = document.getElementById(elementId);
+      const execute = (e) => {
+        e.preventDefault();
+        airconsole.message(AirConsole.SCREEN, messageObject);
+      };
+      el.addEventListener("touchstart", execute);
+      el.addEventListener("mousedown", execute);
     }
 
-    bindDirection("btn-up", "forward");
-    bindDirection("btn-down", "backward");
-    bindDirection("btn-left", "left");
-    bindDirection("btn-right", "right");
+    // Bind phase advancement hooks
+    bindClick("action-go-to-voting", { action: "advance_to_voting" });
+    bindClick("action-go-to-browsing", { action: "reveal_winner" });
+    bindClick("action-reset", { action: "reset_round" });
 
-    // Action Trigger Event Binding Logic Handler
-    const triggerAction = (e) => {
+    // Bind scroll actions
+    bindClick("scroll-up", { action: "scroll", direction: "up" });
+    bindClick("scroll-down", { action: "scroll", direction: "down" });
+
+    // Deploy native OS core text hardware engine components
+    const openKeyboardEngine = (e) => {
       e.preventDefault();
-      airconsole.message(AirConsole.SCREEN, { action: "use_powerup" });
+      airconsole.showTextInput({
+        placeholder: "What should we look up?",
+        initial_value: ""
+      });
     };
-    actionBtn.addEventListener("touchstart", triggerAction);
-    actionBtn.addEventListener("mousedown", triggerAction);
+    document.getElementById("action-type-query").addEventListener("touchstart", openKeyboardEngine);
+    document.getElementById("action-type-query").addEventListener("mousedown", openKeyboardEngine);
 
-    // Monitor Incoming Live Event Handshake Updates From Screen Render Thread Instance
-    airconsole.onMessage = function(device_id, data) {
-      if (data.action === "receive_powerup") {
-        actionBtn.className = ""; // Wipe standard defaults clean
-        if (data.type === 'jump') {
-          actionBtn.classList.add("ready-jump");
-          actionBtn.innerHTML = "SUPER<br>JUMP";
-        } else if (data.type === 'speed') {
-          actionBtn.classList.add("ready-speed");
-          actionBtn.innerHTML = "SUPER<br>SPEED";
-        } else if (data.type === 'blast') {
-          actionBtn.classList.add("ready-blast");
-          actionBtn.innerHTML = "BLAST<br>SHOCK";
-        }
-      }
-      
-      if (data.action === "clear_inventory") {
-        actionBtn.className = "";
-        actionBtn.innerHTML = "EMPTY";
+    // Capture incoming string payloads returning out of target standard inputs
+    airconsole.onTextInput = function(text) {
+      if (text && text.trim().length > 0) {
+        airconsole.message(AirConsole.SCREEN, {
+          action: "submit_query",
+          text: text
+        });
       }
     };
   </script>
