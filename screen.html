@@ -2,360 +2,381 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>3D marble game - Screen</title>
+  <title>Together Browser - Google Voting Edition</title>
   <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #030308;
+      background-color: #0f1016;
+      color: #ffffff;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    #ui-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      padding: 30px;
-      box-sizing: border-box;
     }
-    .hud-text {
-      color: #ffffff;
-      font-size: 24px;
+
+    /* Top Navigation Status Bar */
+    #browser-header {
+      background: linear-gradient(90deg, #131625 0%, #1c2035 100%);
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      border-bottom: 3px solid #4285f4;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+    #logo {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin-right: 30px;
+    }
+    .g-blue { color: #4285f4; }
+    .g-red { color: #ea4335; }
+    .g-yellow { color: #fbbc05; }
+    .g-green { color: #34a853; }
+
+    #game-state-banner {
+      background: #fbbc05;
+      color: #0f1016;
+      padding: 5px 15px;
+      border-radius: 20px;
       font-weight: bold;
-      text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
+      font-size: 14px;
+      text-transform: uppercase;
+      margin-right: 20px;
     }
-    #leaderboard {
-      background: rgba(15, 22, 38, 0.7);
-      padding: 15px;
-      border-radius: 10px;
-      border: 2px solid #1f293d;
-      margin-top: 10px;
-      min-width: 200px;
+    #address-bar-container {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      background: #090a0f;
+      border: 2px solid #292f4c;
+      border-radius: 30px;
+      padding: 8px 20px;
     }
-    .player-row {
-      color: #fff;
+    #address-bar {
+      color: #9aa0a6;
+      font-size: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Core Layout Viewport Container */
+    #viewport-container {
+      flex-grow: 1;
+      position: relative;
+      background: #090a0f;
+    }
+    #browser-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #ffffff;
+      display: none;
+    }
+
+    /* Centralized Dashboard Manager */
+    .screen-panel {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      padding: 40px;
+    }
+
+    /* Phase 1: Suggestion UI Dashboard */
+    #panel-suggesting {
+      background: radial-gradient(circle at center, #1b223c 0%, #090a0f 100%);
+    }
+    .main-title {
+      font-size: 46px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .sub-title {
+      color: #808b9e;
       font-size: 18px;
-      margin: 5px 0;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    #suggestion-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      max-width: 1000px;
+      justify-content: center;
+    }
+    .suggestion-card {
+      background: rgba(30, 37, 65, 0.7);
+      border: 2px solid #3b487e;
+      padding: 15px 25px;
+      border-radius: 14px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: popIn 0.3s ease-out;
+    }
+
+    /* Phase 2: Voting Matrix Display Dashboard */
+    #panel-voting {
+      background: radial-gradient(circle at center, #261b3c 0%, #090a0f 100%);
+      display: none;
+    }
+    #voting-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      width: 100%;
+      max-width: 900px;
+    }
+    .voting-option {
+      background: #181a2b;
+      border: 3px solid #ea4335;
+      border-radius: 20px;
+      padding: 25px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
-    #win-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ffff00;
-      font-size: 50px;
+    .option-text {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .option-votes {
+      background: #ea4335;
+      color: #ffffff;
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 22px;
       font-weight: 900;
-      text-shadow: 0 0 30px rgba(255, 255, 0, 0.8);
+    }
+
+    /* Real-Time Flash Alerts */
+    #scroll-notice {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(66, 133, 244, 0.95);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 900;
+      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.4);
       display: none;
-      text-align: center;
+      pointer-events: none;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <div id="ui-layer">
-    <div>
-      <div id="lobby-status" class="hud-text">3D MARBLE GAME - WAITING FOR PLAYERS...</div>
-      <div id="leaderboard">
-        <div style="font-weight:bold; color:#00ffcc; border-bottom:1px solid #1f293d; padding-bottom:5px;">STANDINGS</div>
-        <div id="leaderboard-rows"></div>
-      </div>
+  <div id="browser-header">
+    <div id="logo">
+      <span class="g-blue">T</span><span class="g-red">o</span><span class="g-yellow">g</span><span class="g-blue">e</span><span class="g-green">t</span><span class="g-red">h</span><span class="g-blue">e</span><span class="g-green">r</span> Browser
     </div>
-    <div id="win-overlay">VICTORY!</div>
+    <div id="game-state-banner" id="state-label">SUGGESTIONS OPEN</div>
+    <div id="address-bar-container">
+      <div id="address-bar">google://waiting_for_queries</div>
+    </div>
+  </div>
+
+  <div id="viewport-container">
+    
+    <iframe id="browser-frame"></iframe>
+
+    <div id="panel-suggesting" class="screen-panel">
+      <div class="main-title">What should we Google?</div>
+      <div class="sub-title">Type the weirdest, funniest, or most interesting search terms on your controller!</div>
+      <div id="suggestion-list">
+        </div>
+    </div>
+
+    <div id="panel-voting" class="screen-panel">
+      <div class="main-title">Cast Your Ballots!</div>
+      <div class="sub-title">Select your favorite search target on your phone layout screen now.</div>
+      <div id="voting-grid">
+        </div>
+    </div>
+
+    <div id="scroll-notice">SCROLL EVENT</div>
   </div>
 
   <script>
     const airconsole = new AirConsole();
-    const players = {};
-    let powerups = [];
-    let gameActive = true;
     
-    const trackLength = 500; 
-    const trackWidth = 14;
-    const ballRadius = 0.8;
+    const frame = document.getElementById("browser-frame");
+    const addressBar = document.getElementById("address-bar");
+    const stateBanner = document.getElementById("game-state-banner");
+    const panelSuggesting = document.getElementById("panel-suggesting");
+    const panelVoting = document.getElementById("panel-voting");
+    const suggestionList = document.getElementById("suggestion-list");
+    const votingGrid = document.getElementById("voting-grid");
+    const scrollNotice = document.getElementById("scroll-notice");
 
-    // Three.js Setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x030308);
-    scene.fog = new THREE.FogExp2(0x030308, 0.012);
+    let currentGameState = "SUGGESTING"; 
+    let searchSuggestions = []; 
+    let totalSuggestionsCount = 0;
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    document.body.appendChild(renderer.domElement);
-
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    dirLight.position.set(30, 50, 20);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
-
-    // Build Track Platform
-    const trackGeo = new THREE.BoxGeometry(trackWidth, 1, trackLength);
-    const trackMat = new THREE.MeshStandardMaterial({ color: 0x121520, roughness: 0.3, metalness: 0.2 });
-    const trackMesh = new THREE.Mesh(trackGeo, trackMat);
-    trackMesh.position.set(0, -0.5, -trackLength / 2);
-    trackMesh.receiveShadow = true;
-    scene.add(trackMesh);
-
-    // Solid Neon Side Rails (For Wall Hits)
-    function createSolidRail(xPos) {
-      const railGeo = new THREE.BoxGeometry(0.5, 1.2, trackLength);
-      const railMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x003322 });
-      const rail = new THREE.Mesh(railGeo, railMat);
-      rail.position.set(xPos, 0.6, -trackLength / 2);
-      scene.add(rail);
-    }
-    createSolidRail(-trackWidth / 2);
-    createSolidRail(trackWidth / 2);
-
-    // Finish Goal Pad
-    const finishGeo = new THREE.BoxGeometry(trackWidth, 1.1, 8);
-    const finishMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0x330011 });
-    const finishMesh = new THREE.Mesh(finishGeo, finishMat);
-    finishMesh.position.set(0, -0.45, -trackLength + 4);
-    scene.add(finishMesh);
-
-    // Power-up Spawning Framework
-    const pUpTypes = [
-      { type: 'jump', color: 0xffaa00, geo: new THREE.TorusGeometry(0.5, 0.15, 8, 24) },
-      { type: 'speed', color: 0x00ff00, geo: new THREE.OctahedronGeometry(0.6) },
-      { type: 'blast', color: 0xff00ff, geo: new THREE.ConeGeometry(0.5, 1, 4) }
-    ];
-
-    function spawnPowerups() {
-      powerups.forEach(p => scene.remove(p.mesh));
-      powerups = [];
-
-      for (let z = -40; z > -trackLength + 40; z -= 45) {
-        const config = pUpTypes[Math.floor(Math.random() * pUpTypes.length)];
-        const mat = new THREE.MeshBasicMaterial({ color: config.color, wireframe: false });
-        const mesh = new THREE.Mesh(config.geo, mat);
-        
-        const xPos = (Math.random() - 0.5) * (trackWidth - 4);
-        mesh.position.set(xPos, 1.2, z);
-        scene.add(mesh);
-
-        powerups.push({ type: config.type, mesh: mesh, active: true });
-      }
-    }
-    spawnPowerups();
-
-    // AirConsole Device Implementations
     airconsole.onConnect = function(device_id) {
-      document.getElementById("lobby-status").innerHTML = "MATCH ACTIVE";
-      
-      const colors = [0x3388ff, 0xff3333, 0x33ff33, 0xffff33, 0xff33ff];
-      const assignedColor = colors[device_id % colors.length];
+      updateControllerState(device_id);
+    };
 
-      const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
-      const ballMat = new THREE.MeshStandardMaterial({ 
-        color: assignedColor, 
-        roughness: 0.1, 
-        metalness: 0.3 
+    function updateControllerState(targetId) {
+      airconsole.message(targetId, {
+        action: "sync_state",
+        state: currentGameState,
+        options: searchSuggestions.map(s => ({ id: s.id, text: s.text }))
       });
-      const ballMesh = new THREE.Mesh(ballGeo, ballMat);
-      ballMesh.castShadow = true;
-      ballMesh.position.set((Math.random() - 0.5) * 4, 1, 0);
-      scene.add(ballMesh);
+    }
 
-      players[device_id] = {
-        mesh: ballMesh,
-        nickname: airconsole.getNickname(device_id) || `Marble ${device_id}`,
-        vx: 0, vy: 0, vz: 0,
-        input: { forward: false, backward: false, left: false, right: false },
-        currentPowerup: null
-      };
-    };
-
-    airconsole.onDisconnect = function(device_id) {
-      if (players[device_id]) {
-        scene.remove(players[device_id].mesh);
-        delete players[device_id];
+    function broadcastStateChange() {
+      for (let id in airconsole.getConnectedDeviceIds()) {
+        const dId = airconsole.getConnectedDeviceIds()[id];
+        updateControllerState(dId);
       }
-    };
+    }
 
     airconsole.onMessage = function(device_id, data) {
-      const p = players[device_id];
-      if (!p || !gameActive) return;
+      if (!data || !data.action) return;
 
-      if (data.action === "input") {
-        p.input[data.dir] = data.value;
+      // Handle Input Submissions Phase
+      if (data.action === "submit_query" && currentGameState === "SUGGESTING") {
+        const cleanedText = data.text.trim();
+        if (cleanedText.length === 0) return;
+
+        totalSuggestionsCount++;
+        const newSuggestion = {
+          id: totalSuggestionsCount,
+          text: cleanedText,
+          votes: 0,
+          voters: []
+        };
+        searchSuggestions.push(newSuggestion);
+
+        const node = document.createElement("div");
+        node.className = "suggestion-card";
+        node.innerText = `🔍 ${cleanedText}`;
+        suggestionList.appendChild(node);
       }
-      
-      if (data.action === "use_powerup") {
-        executePowerup(device_id, p);
+
+      // Handle Progression Shifts out of Suggestion Phase
+      if (data.action === "advance_to_voting" && currentGameState === "SUGGESTING") {
+        if (searchSuggestions.length === 0) return; 
+        
+        currentGameState = "VOTING";
+        stateBanner.innerText = "VOTING ACTIVE";
+        stateBanner.style.background = "#ea4335";
+        stateBanner.style.color = "#ffffff";
+        panelSuggesting.style.display = "none";
+        panelVoting.style.display = "flex";
+        
+        renderVotingLayout();
+        broadcastStateChange();
+      }
+
+      // Handle Process Voting Inputs Pipeline
+      if (data.action === "cast_vote" && currentGameState === "VOTING") {
+        const item = searchSuggestions.find(s => s.id === data.optionId);
+        const alreadyVoted = searchSuggestions.some(s => s.voters.includes(device_id));
+
+        if (item && !alreadyVoted) {
+          item.votes++;
+          item.voters.push(device_id);
+          renderVotingLayout();
+        }
+      }
+
+      // Handle Progression Shift into Active Specialized Google Browsing
+      if (data.action === "reveal_winner" && currentGameState === "VOTING") {
+        searchSuggestions.sort((a, b) => b.votes - a.votes);
+        const winningQuery = searchSuggestions[0].text;
+
+        currentGameState = "BROWSING";
+        stateBanner.innerText = "GOOGLE LIVE";
+        stateBanner.style.background = "#34a853";
+        stateBanner.style.color = "#ffffff";
+        panelVoting.style.display = "none";
+        frame.style.display = "block";
+
+        // Specialized Google parameters bypass frame defense blocks flawlessly
+        const destinationUrl = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(winningQuery);
+        addressBar.innerText = destinationUrl;
+        frame.src = destinationUrl;
+
+        broadcastStateChange();
+      }
+
+      // Handle Browser Frame Fluid Scrolling Actions
+      if (data.action === "scroll" && currentGameState === "BROWSING") {
+        const scrollerName = airconsole.getNickname(device_id) || `User ${device_id}`;
+        flashScrollNotice(`${scrollerName} SCROLLING`);
+        
+        if (data.direction === "up") {
+          frame.contentWindow?.scrollBy(0, -180);
+          window.scrollBy(0, -180);
+        } else if (data.direction === "down") {
+          frame.contentWindow?.scrollBy(0, 180);
+          window.scrollBy(0, 180);
+        }
+      }
+
+      // Reset the environment to run a new round
+      if (data.action === "reset_round") {
+        currentGameState = "SUGGESTING";
+        searchSuggestions = [];
+        totalSuggestionsCount = 0;
+        suggestionList.innerHTML = "";
+        votingGrid.innerHTML = "";
+        
+        addressBar.innerText = "google://waiting_for_queries";
+        stateBanner.innerText = "SUGGESTIONS OPEN";
+        stateBanner.style.background = "#fbbc05";
+        stateBanner.style.color = "#0f1016";
+        
+        frame.src = "";
+        frame.style.display = "none";
+        panelSuggesting.style.display = "flex";
+        panelVoting.style.display = "none";
+        
+        broadcastStateChange();
       }
     };
 
-    // Power-up Action Execution Logic
-    function executePowerup(id, player) {
-      if (!player.currentPowerup) return;
-
-      if (player.currentPowerup === 'jump') {
-        player.vy = 0.38; 
-        airconsole.message(id, { action: "clear_inventory" });
-        player.currentPowerup = null;
-      } 
-      else if (player.currentPowerup === 'speed') {
-        player.vz -= 0.45; 
-        airconsole.message(id, { action: "clear_inventory" });
-        player.currentPowerup = null;
-      } 
-      else if (player.currentPowerup === 'blast') {
-        for (let targetId in players) {
-          if (targetId == id) continue;
-          const target = players[targetId];
-          const dist = player.mesh.position.distanceTo(target.mesh.position);
-          if (dist < 15) {
-            const dir = new THREE.Vector3().subVectors(target.mesh.position, player.mesh.position).normalize();
-            target.vx += dir.x * 0.35;
-            target.vz += dir.z * 0.35;
-            target.vy += 0.15; 
-          }
-        }
-        airconsole.message(id, { action: "clear_inventory" });
-        player.currentPowerup = null;
-      }
+    function renderVotingLayout() {
+      votingGrid.innerHTML = "";
+      searchSuggestions.forEach(opt => {
+        votingGrid.innerHTML += `
+          <div class="voting-option">
+            <span class="option-text">🔍 ${opt.text}</span>
+            <span class="option-votes">${opt.votes}</span>
+          </div>
+        `;
+      });
     }
 
-    // Main Loop Updates
-    function animate() {
-      requestAnimationFrame(animate);
-
-      let leaderZ = 0;
-      let activeCount = 0;
-      let leaderboardData = [];
-
-      for (let id in players) {
-        const p = players[id];
-        activeCount++;
-
-        const speedFactor = 0.016;
-        if (p.input.forward)  p.vz -= speedFactor;
-        if (p.input.backward) p.vz += speedFactor;
-        if (p.input.left)     p.vx -= speedFactor;
-        if (p.input.right)    p.vx += speedFactor;
-
-        p.vx *= 0.96;
-        p.vz *= 0.95;
-
-        p.mesh.position.x += p.vx;
-        p.mesh.position.z += p.vz;
-        p.mesh.position.y += p.vy;
-
-        p.mesh.rotation.x += p.vz * 0.4;
-        p.mesh.rotation.z -= p.vx * 0.4;
-
-        const wallBoundX = (trackWidth / 2) - ballRadius;
-        if (p.mesh.position.y > 0.8) {
-          p.vy -= 0.015; 
-        } else {
-          if (Math.abs(p.mesh.position.x) <= (trackWidth / 2) && p.mesh.position.z <= 2 && p.mesh.position.z >= -trackLength) {
-            p.mesh.position.y = 0.8;
-            p.vy = 0;
-          } else {
-            p.vy -= 0.015; 
-          }
-        }
-
-        // Wall Hit Mechanic
-        if (Math.abs(p.mesh.position.x) >= wallBoundX && p.mesh.position.y <= 1.2) {
-          p.mesh.position.x = Math.sign(p.mesh.position.x) * wallBoundX;
-          
-          if (Math.abs(p.vx) > 0.04) {
-            p.vx = -p.vx * 1.5; 
-            p.vz *= 1.2; 
-            p.vy = 0.14; 
-          } else {
-            p.vx = -p.vx * 0.5;
-          }
-        }
-
-        if (p.mesh.position.y < -25) {
-          p.mesh.position.set((Math.random() - 0.5) * 4, 6, p.mesh.position.z + 20 > 0 ? 0 : p.mesh.position.z + 20);
-          p.vx = 0; p.vy = 0; p.vz = 0;
-        }
-
-        powerups.forEach(pUp => {
-          if (!pUp.active) return;
-          const dist = p.mesh.position.distanceTo(pUp.mesh.position);
-          if (dist < 1.6) {
-            pUp.active = false;
-            pUp.mesh.position.y = -100; 
-            p.currentPowerup = pUp.type;
-            airconsole.message(id, { action: "receive_powerup", type: pUp.type });
-          }
-        });
-
-        if (p.mesh.position.z <= -trackLength + 4 && gameActive) {
-          gameActive = false;
-          const winOverlay = document.getElementById("win-overlay");
-          winOverlay.innerHTML = `${p.nickname.toUpperCase()}<br>DOMINATES 3D MARBLE GAME!`;
-          winOverlay.style.display = "block";
-          
-          setTimeout(() => {
-            for (let rId in players) {
-              players[rId].mesh.position.set((Math.random() - 0.5) * 4, 1, 0);
-              players[rId].vx = 0; players[rId].vy = 0; players[rId].vz = 0;
-            }
-            spawnPowerups();
-            winOverlay.style.display = "none";
-            gameActive = true;
-          }, 5000);
-        }
-
-        if (p.mesh.position.z < leaderZ) leaderZ = p.mesh.position.z;
-
-        leaderboardData.push({ name: p.nickname, dist: Math.floor(Math.abs(p.mesh.position.z)) });
-      }
-
-      if (activeCount > 0) {
-        camera.position.z += ((leaderZ + 16) - camera.position.z) * 0.08;
-        camera.position.y += (8 - camera.position.y) * 0.08;
-        camera.position.x += (0 - camera.position.x) * 0.08;
-        camera.lookAt(new THREE.Vector3(0, 1, leaderZ - 6));
-      } else {
-        camera.position.set(0, 10, 18);
-        camera.lookAt(new THREE.Vector3(0, 0, -15));
-      }
-
-      powerups.forEach(pUp => {
-        if (pUp.active) {
-          pUp.mesh.rotation.y += 0.03;
-          pUp.mesh.rotation.x += 0.01;
-        }
-      });
-
-      leaderboardData.sort((a, b) => b.dist - a.dist);
-      const rowsContainer = document.getElementById("leaderboard-rows");
-      rowsContainer.innerHTML = "";
-      leaderboardData.forEach(row => {
-        rowsContainer.innerHTML += `<div class="player-row"><span>${row.name}</span><span>${row.dist}m</span></div>`;
-      });
-
-      renderer.render(scene, camera);
+    let scrollTimeout;
+    function flashScrollNotice(msg) {
+      scrollNotice.innerText = msg;
+      scrollNotice.style.display = "block";
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        scrollNotice.style.display = "none";
+      }, 700);
     }
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    animate();
   </script>
 </body>
 </html>
