@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>3D Marble Race - Screen</title>
+  <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #050508;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 25px;
+      box-sizing: border-box;
+    }
+    .hud-text {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(0,255,255,0.8);
+      letter-spacing: 2px;
+    }
+    #level-card {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid #3b4f74;
+      align-self: flex-start;
+    }
+    #announcement-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff007f;
+      font-size: 55px;
+      font-weight: 900;
+      text-shadow: 0 0 20px rgba(255,0,127,0.8);
+      display: none;
+      text-align: center;
+      background: rgba(5, 5, 8, 0.85);
+      padding: 30px 60px;
+      border-radius: 20px;
+      border: 3px solid #ff007f;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="ui-layer">
+    <div id="level-card" class="hud-text">LEVEL 1: NEON SPRINT</div>
+    <div id="announcement-overlay">PLAYER WINS LEVEL 1!</div>
+  </div>
+
+  <script>
+    const levelCard = document.getElementById("level-card");
+    const announcementOverlay = document.getElementById("announcement-overlay");
+    
+    const airconsole = new AirConsole();
+
+    // Game Progression Variables
+    let currentLevelIndex = 0;
+    let gameActive = true;
+    const players = {};
+    
+    // Track Asset Containers for dynamic clearing/loading
+    let trackMeshes = [];
+    let obstacleMeshes = [];
+
+    // --- 5-Level Architecture Definitions ---
+    const levelConfigs = [
+      {
+        name: "LEVEL 1: NEON SPRINT",
+        finishZ: -290,
+        segments: [
+          { x: 0, y: -0.5, z: -150, w: 14, h: 1, d: 300 } // Long, wide safety track
+        ],
+        obstacles: []
+      },
+      {
+        name: "LEVEL 2: THE CHICANES",
+        finishZ: -290,
+        segments: [
+          // Alternating left/right staggered platforms forming a zig-zag road
+          { x: 0, y: -0.5, z: -40, w: 14, h: 1, d: 90 },
+          { x: -5, y: -0.5, z: -125, w: 12, h: 1, d: 90 },
+          { x: 5, y: -0.5, z: -210, w: 12, h: 1, d: 90 },
+          { x: 0, y: -0.5, z: -275, w: 14, h: 1, d: 50 }
+        ],
+        obstacles: []
+      },
+      {
+        name: "LEVEL 3: RAZOR'S EDGE",
+        finishZ: -280,
+        segments: [
+          { x: 0, y: -0.5, z: -145, w: 5, h: 1, d: 300 } // Ultra narrow, high risk of falling off
+        ],
+        obstacles: []
+      },
+      {
+        name: "LEVEL 4: BLOCKADE BOULEVARD",
+        finishZ: -290,
+        segments: [
+          { x: 0, y: -0.5, z: -150, w: 14, h: 1, d: 300 }
+        ],
+        // Static pillars placed right in the middle of the roadway
+        obstacles: [
+          { x: -3, y: 1, z: -60, w: 3, h: 3, d: 3, type: "static" },
+          { x: 3, y: 1, z: -110, w: 3, h: 3, d: 3, type: "static" },
+          { x: 0, y: 1, z: -160, w: 4, h: 3, d: 3, type: "static" },
+          { x: -4, y: 1, z: -210, w: 3, h: 3, d: 3, type: "static" },
+          { x: 4, y: 1, z: -250, w: 3, h: 3, d: 3, type: "static" }
+        ]
+      },
+      {
+        name: "LEVEL 5: THE GAUNTLET",
+        finishZ: -330,
+        segments: [
+          // Narrow roads with literal empty air gaps you have to fly over using momentum
+          { x: 0, y: -0.5, z: -40, w: 8, h: 1, d: 90 },
+          // Gap from Z=-85 to Z=-115
+          { x: 4, y: -0.5, z: -160, w: 6, h: 1, d: 90 },
+          // Gap from Z=-205 to Z=-235
+          { x: -4, y: -0.5, z: -285, w: 7, h: 1, d: 100 }
+        ],
+        // Moving speed-bumps that slide left and right across the path
+        obstacles: [
+          { x: 0, y: 0.8, z: -60, w: 3, h: 1.5, d: 2, type: "patrol", range: 2.5, speed: 0.05, currentDir: 1 },
+          { x: 4, y: 0.8, z: -140, w: 2, h: 1.5, d: 2, type: "patrol", range: 1.8, speed: 0.07, currentDir: 1 },
+          { x: -4, y: 0.8, z: -260, w: 2, h: 1.5, d: 2, type: "patrol", range: 2.0, speed: 0.06, currentDir: 1 }
+        ]
+      }
+    ];
+
+    // --- Three.js Setup Scene Environment ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050508

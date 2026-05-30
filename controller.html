@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>3D Marble Race - Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #090d16;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    
+    .dpad-container {
+      position: relative;
+      width: 240px;
+      height: 240px;
+    }
+    
+    .btn {
+      position: absolute;
+      background: #1f293d;
+      border: 3px solid #3b4f74;
+      color: #00ffcc;
+      font-size: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 18px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      outline: none;
+      box-sizing: border-box;
+    }
+    
+    .btn:active {
+      background: #00ffcc;
+      color: #090d16;
+      border-color: #ffffff;
+      box-shadow: 0 0 15px #00ffcc;
+    }
+
+    /* Cross layout construction alignment coordinates */
+    #btn-forward  { top: 0; left: 80px; width: 80px; height: 80px; }
+    #btn-backward { bottom: 0; left: 80px; width: 80px; height: 80px; }
+    #btn-left     { top: 80px; left: 0; width: 80px; height: 80px; }
+    #btn-right    { top: 80px; right: 0; width: 80px; height: 80px; }
+
+    .center-core {
+      position: absolute;
+      top: 85px;
+      left: 85px;
+      width: 70px;
+      height: 70px;
+      background: #111625;
+      border-radius: 50%;
+      border: 2px dashed #3b4f74;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dpad-container">
+    <div class="btn" id="btn-forward">▲</div>
+    <div class="btn" id="btn-left">◀</div>
+    <div class="center-core"></div>
+    <div class="btn" id="btn-right">▶</div>
+    <div class="btn" id="btn-backward">▼</div>
+  </div>
+
+  <script>
+    // Initialize device context frame bound to forced landscape orientation layouts
+    const airconsole = new AirConsole({ orientation: AirConsole.ORIENTATION_LANDSCAPE });
+
+    function bindControlElement(elementId, directionalKey) {
+      const targetElement = document.getElementById(elementId);
+
+      // Core event router to interface tracking pipelines back to central screen
+      function sendSignal(isPressed) {
+        airconsole.message(AirConsole.SCREEN, {
+          action: "input",
+          dir: directionalKey,
+          value: isPressed
+        });
+      }
+
+      // Touch Interface Handlers
+      targetElement.addEventListener("touchstart", (e) => { 
+        e.preventDefault(); 
+        sendSignal(true); 
+      });
+      targetElement.addEventListener("touchend", (e) => { 
+        e.preventDefault(); 
+        sendSignal(false); 
+      });
+
+      // Mouse Interface Fallback Listeners (Simulator compatibility)
+      targetElement.addEventListener("mousedown", () => sendSignal(true));
+      targetElement.addEventListener("mouseup", () => sendSignal(false));
+      targetElement.addEventListener("mouseleave", () => sendSignal(false));
+    }
+
+    // Attach interaction handlers to structural controller map nodes
+    bindControlElement("btn-forward", "forward");
+    bindControlElement("btn-backward", "backward");
+    bindControlElement("btn-left", "left");
+    bindControlElement("btn-right", "right");
+  </script>
+</body>
+</html>
