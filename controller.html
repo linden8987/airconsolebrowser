@@ -2,117 +2,176 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>3D Marble Race - Controller</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Marble Blast Arena - Controller</title>
   <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
   <style>
     body {
       margin: 0;
-      background: #090d16;
-      color: #ffffff;
-      font-family: system-ui, -apple-system, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      padding: 0;
+      background-color: #0d111a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
+      display: flex;
+      height: 100vh;
+      box-sizing: border-box;
     }
-    
-    .dpad-container {
-      position: relative;
-      width: 240px;
-      height: 240px;
-    }
-    
-    .btn {
-      position: absolute;
-      background: #1f293d;
-      border: 3px solid #3b4f74;
-      color: #00ffcc;
-      font-size: 32px;
+    .panel {
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 18px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      outline: none;
-      box-sizing: border-box;
+      width: 50%;
+      height: 100%;
+      position: relative;
+    }
+    .left-panel {
+      border-right: 2px solid #1a2333;
+    }
+    /* D-PAD Engine Visual Components */
+    .dpad {
+      position: relative;
+      width: 210px;
+      height: 210px;
+    }
+    .btn {
+      position: absolute;
+      background-color: #161f30;
+      border: 3px solid #00ffcc;
+      border-radius: 14px;
+      color: #00ffcc;
+      font-size: 26px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
+    }
+    .btn:active {
+      background-color: #00ffcc;
+      color: #0d111a;
+    }
+    #btn-up { top: 0; left: 70px; width: 70px; height: 70px; }
+    #btn-down { bottom: 0; left: 70px; width: 70px; height: 70px; }
+    #btn-left { top: 70px; left: 0; width: 70px; height: 70px; }
+    #btn-right { top: 70px; right: 0; width: 70px; height: 70px; }
+    #dpad-center { top: 70px; left: 70px; width: 70px; height: 70px; background-color: #0d111a; border: none; }
+
+    /* Action Trigger Interface Panel Components */
+    #action-button {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background-color: #221a30;
+      border: 5px solid #888888;
+      color: #888888;
+      font-size: 20px;
+      font-weight: 900;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.15s ease;
+      text-transform: uppercase;
     }
     
-    .btn:active {
-      background: #00ffcc;
-      color: #090d16;
-      border-color: #ffffff;
-      box-shadow: 0 0 15px #00ffcc;
+    /* Dynamic UI State Modification Styles */
+    #action-button.ready-jump {
+      border-color: #ffaa00;
+      color: #ffaa00;
+      background-color: #3d2800;
+      box-shadow: 0 0 25px rgba(255, 170, 0, 0.5);
     }
-
-    /* Cross layout construction alignment coordinates */
-    #btn-forward  { top: 0; left: 80px; width: 80px; height: 80px; }
-    #btn-backward { bottom: 0; left: 80px; width: 80px; height: 80px; }
-    #btn-left     { top: 80px; left: 0; width: 80px; height: 80px; }
-    #btn-right    { top: 80px; right: 0; width: 80px; height: 80px; }
-
-    .center-core {
-      position: absolute;
-      top: 85px;
-      left: 85px;
-      width: 70px;
-      height: 70px;
-      background: #111625;
-      border-radius: 50%;
-      border: 2px dashed #3b4f74;
+    #action-button.ready-speed {
+      border-color: #00ff green;
+      border-color: #00ff00;
+      color: #00ff00;
+      background-color: #003d00;
+      box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+    }
+    #action-button.ready-blast {
+      border-color: #ff00ff;
+      color: #ff00ff;
+      background-color: #3d003d;
+      box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
     }
   </style>
 </head>
 <body>
 
-  <div class="dpad-container">
-    <div class="btn" id="btn-forward">▲</div>
-    <div class="btn" id="btn-left">◀</div>
-    <div class="center-core"></div>
-    <div class="btn" id="btn-right">▶</div>
-    <div class="btn" id="btn-backward">▼</div>
+  <div class="panel left-panel">
+    <div class="dpad">
+      <div id="btn-up" class="btn">▲</div>
+      <div id="btn-left" class="btn">◀</div>
+      <div id="dpad-center"></div>
+      <div id="btn-right" class="btn">▶</div>
+      <div id="btn-down" class="btn">▼</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div id="action-button">EMPTY</div>
   </div>
 
   <script>
-    // Initialize device context frame bound to forced landscape orientation layouts
     const airconsole = new AirConsole({ orientation: AirConsole.ORIENTATION_LANDSCAPE });
+    const actionBtn = document.getElementById("action-button");
 
-    function bindControlElement(elementId, directionalKey) {
-      const targetElement = document.getElementById(elementId);
-
-      // Core event router to interface tracking pipelines back to central screen
-      function sendSignal(isPressed) {
+    function bindDirection(elementId, directionStr) {
+      const el = document.getElementById(elementId);
+      
+      const sendInput = (isPressed) => {
         airconsole.message(AirConsole.SCREEN, {
           action: "input",
-          dir: directionalKey,
+          dir: directionStr,
           value: isPressed
         });
-      }
+      };
 
-      // Touch Interface Handlers
-      targetElement.addEventListener("touchstart", (e) => { 
-        e.preventDefault(); 
-        sendSignal(true); 
-      });
-      targetElement.addEventListener("touchend", (e) => { 
-        e.preventDefault(); 
-        sendSignal(false); 
-      });
-
-      // Mouse Interface Fallback Listeners (Simulator compatibility)
-      targetElement.addEventListener("mousedown", () => sendSignal(true));
-      targetElement.addEventListener("mouseup", () => sendSignal(false));
-      targetElement.addEventListener("mouseleave", () => sendSignal(false));
+      el.addEventListener("touchstart", (e) => { e.preventDefault(); sendInput(true); });
+      el.addEventListener("touchend", (e) => { e.preventDefault(); sendInput(false); });
+      
+      // Fallback handlers for testing inside simulation window layout frames directly
+      el.addEventListener("mousedown", () => { sendInput(true); });
+      el.addEventListener("mouseup", () => { sendInput(false); });
     }
 
-    // Attach interaction handlers to structural controller map nodes
-    bindControlElement("btn-forward", "forward");
-    bindControlElement("btn-backward", "backward");
-    bindControlElement("btn-left", "left");
-    bindControlElement("btn-right", "right");
+    bindDirection("btn-up", "forward");
+    bindDirection("btn-down", "backward");
+    bindDirection("btn-left", "left");
+    bindDirection("btn-right", "right");
+
+    // Action Trigger Event Binding Logic Handler
+    const triggerAction = (e) => {
+      e.preventDefault();
+      airconsole.message(AirConsole.SCREEN, { action: "use_powerup" });
+    };
+    actionBtn.addEventListener("touchstart", triggerAction);
+    actionBtn.addEventListener("mousedown", triggerAction);
+
+    // Monitor Incoming Live Event Handshake Updates From Screen Render Thread Instance
+    airconsole.onMessage = function(device_id, data) {
+      if (data.action === "receive_powerup") {
+        actionBtn.className = ""; // Wipe standard defaults clean
+        if (data.type === 'jump') {
+          actionBtn.classList.add("ready-jump");
+          actionBtn.innerHTML = "SUPER<br>JUMP";
+        } else if (data.type === 'speed') {
+          actionBtn.classList.add("ready-speed");
+          actionBtn.innerHTML = "SUPER<br>SPEED";
+        } else if (data.type === 'blast') {
+          actionBtn.classList.add("ready-blast");
+          actionBtn.innerHTML = "BLAST<br>SHOCK";
+        }
+      }
+      
+      if (data.action === "clear_inventory") {
+        actionBtn.className = "";
+        actionBtn.innerHTML = "EMPTY";
+      }
+    };
   </script>
 </body>
 </html>
