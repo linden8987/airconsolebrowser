@@ -242,6 +242,11 @@
       updateControllerState(device_id);
     };
 
+    airconsole.onReady = function() {
+      // Force handshake sync on system layout boot
+      broadcastStateChange();
+    };
+
     function updateControllerState(targetId) {
       airconsole.message(targetId, {
         action: "sync_state",
@@ -251,16 +256,18 @@
     }
 
     function broadcastStateChange() {
-      for (let id in airconsole.getConnectedDeviceIds()) {
-        const dId = airconsole.getConnectedDeviceIds()[id];
-        updateControllerState(dId);
+      const connectedDevices = airconsole.getConnectedDeviceIds();
+      if (connectedDevices) {
+        connectedDevices.forEach(dId => {
+          updateControllerState(dId);
+        });
       }
     }
 
     airconsole.onMessage = function(device_id, data) {
       if (!data || !data.action) return;
 
-      // Anti-Infinite Loading Safety Valve: Explicit Request Sync Hook
+      // Anti-Infinite Loading Loop Safety: Immediate Resync Request Handler
       if (data.action === "request_state_recovery") {
         updateControllerState(device_id);
         return;
@@ -371,7 +378,6 @@
       }
     };
 
-    // Bugfix: Safe DOM generation technique prevents simultaneous input race freezes
     function renderVotingLayout() {
       votingGrid.innerHTML = "";
       searchSuggestions.forEach(opt => {
