@@ -5,174 +5,86 @@
   <title>Together Browser - Google Voting Edition</title>
   <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0f1016;
-      color: #ffffff;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #browser-header {
-      background: linear-gradient(90deg, #131625 0%, #1c2035 100%);
-      padding: 15px 25px;
-      display: flex;
-      align-items: center;
-      border-bottom: 3px solid #4285f4;
-      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
-      z-index: 10;
-    }
-    #logo { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin-right: 30px; }
-    .g-blue { color: #4285f4; } .g-red { color: #ea4335; } .g-yellow { color: #fbbc05; } .g-green { color: #34a853; }
-
-    #game-state-banner {
-      background: #fbbc05;
-      color: #0f1016;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 14px;
-      text-transform: uppercase;
-      margin-right: 20px;
-    }
-    #address-bar-container { flex-grow: 1; display: flex; align-items: center; background: #090a0f; border: 2px solid #292f4c; border-radius: 30px; padding: 8px 20px; }
-    #address-bar { color: #9aa0a6; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    #viewport-container { flex-grow: 1; position: relative; background: #090a0f; overflow-y: auto; scroll-behavior: smooth; }
-    #browser-frame { width: 100%; height: 6000px; border: none; background: #ffffff; display: none; }
-
-    .screen-panel {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      padding: 40px;
-      background: #090a0f;
-    }
-
-    /* FIX: Ensure voting panel is hidden by default */
+    body { margin: 0; padding: 0; background-color: #0f1016; color: #ffffff; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+    #browser-header { background: #131625; padding: 15px 25px; display: flex; align-items: center; border-bottom: 3px solid #4285f4; }
+    #viewport-container { flex-grow: 1; position: relative; background: #090a0f; overflow: hidden; }
+    #browser-frame { width: 100%; height: 100%; border: none; background: #ffffff; display: none; }
+    .screen-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #090a0f; }
     #panel-voting { display: none; }
-
-    .main-title { font-size: 46px; font-weight: 800; margin-bottom: 10px; text-align: center; }
-    .sub-title { color: #808b9e; font-size: 18px; margin-bottom: 40px; text-align: center; }
-    #suggestion-list { display: flex; flex-wrap: wrap; gap: 15px; max-width: 1000px; justify-content: center; }
-    .suggestion-card { background: rgba(30, 37, 65, 0.7); border: 2px solid #3b487e; padding: 15px 25px; border-radius: 14px; font-size: 20px; font-weight: bold; color: #ffffff; }
-
-    #voting-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; width: 100%; max-width: 900px; }
-    .voting-option { background: #181a2b; border: 3px solid #ea4335; border-radius: 20px; padding: 25px; display: flex; justify-content: space-between; align-items: center; }
-    .option-text { font-size: 24px; font-weight: bold; }
-    .option-votes { background: #ea4335; color: #ffffff; padding: 8px 20px; border-radius: 30px; font-size: 22px; font-weight: 900; }
-
-    #scroll-notice { position: fixed; bottom: 20px; right: 20px; background: rgba(66, 133, 244, 0.95); color: #ffffff; padding: 10px 20px; border-radius: 8px; font-weight: 900; display: none; z-index: 100; }
+    .suggestion-card { background: #1b223c; padding: 20px; margin: 10px; border-radius: 12px; font-size: 24px; border: 2px solid #4285f4; }
   </style>
 </head>
 <body>
 
   <div id="browser-header">
-    <div id="logo"><span class="g-blue">T</span><span class="g-red">o</span><span class="g-yellow">g</span><span class="g-blue">e</span><span class="g-green">t</span><span class="g-red">h</span><span class="g-blue">e</span><span class="g-green">r</span> Browser</div>
-    <div id="game-state-banner">SUGGESTIONS OPEN</div>
-    <div id="address-bar-container">
-      <div id="address-bar">google://waiting_for_queries</div>
-    </div>
+    <div id="game-state-banner">READY</div>
+    <div id="address-bar">google://initialize</div>
   </div>
 
   <div id="viewport-container">
     <iframe id="browser-frame"></iframe>
     <div id="panel-suggesting" class="screen-panel">
-      <div class="main-title">What should we Google?</div>
-      <div class="sub-title">Type the weirdest, funniest, or most interesting search terms on your controller!</div>
+      <h1>What should we Google?</h1>
       <div id="suggestion-list"></div>
     </div>
     <div id="panel-voting" class="screen-panel">
-      <div class="main-title">Cast Your Ballots!</div>
-      <div class="sub-title">Select your favorite search target on your phone layout screen now.</div>
+      <h1>Cast Your Ballots!</h1>
       <div id="voting-grid"></div>
     </div>
   </div>
 
-  <div id="scroll-notice">SCROLL EVENT</div>
-
   <script>
-    const airconsole = new AirConsole();
-    const viewportContainer = document.getElementById("viewport-container");
-    const frame = document.getElementById("browser-frame");
-    const addressBar = document.getElementById("address-bar");
-    const stateBanner = document.getElementById("game-state-banner");
-    const panelSuggesting = document.getElementById("panel-suggesting");
-    const panelVoting = document.getElementById("panel-voting");
-    const suggestionList = document.getElementById("suggestion-list");
-    const votingGrid = document.getElementById("voting-grid");
-    const scrollNotice = document.getElementById("scroll-notice");
+    // Failsafe initialization wrapper
+    window.onload = function() {
+      const airconsole = new AirConsole();
+      const panelSuggesting = document.getElementById("panel-suggesting");
+      const panelVoting = document.getElementById("panel-voting");
+      const suggestionList = document.getElementById("suggestion-list");
+      const votingGrid = document.getElementById("voting-grid");
+      
+      let currentGameState = "SUGGESTING";
+      let searchSuggestions = [];
 
-    // FIX: Set initial display state correctly
-    panelSuggesting.style.display = "flex";
-    panelVoting.style.display = "none";
-
-    let currentGameState = "SUGGESTING"; 
-    let searchSuggestions = []; 
-    let totalSuggestionsCount = 0;
-
-    airconsole.onConnect = function(device_id) { updateControllerState(device_id); };
-    airconsole.onReady = function() { broadcastStateChange(); };
-
-    function updateControllerState(targetId) {
-      airconsole.message(targetId, {
-        action: "sync_state",
-        state: currentGameState,
-        options: searchSuggestions.map(s => ({ id: s.id, text: s.text }))
-      });
-    }
-
-    function broadcastStateChange() {
-      const devices = airconsole.getConnectedDeviceIds();
-      if (devices) devices.forEach(id => updateControllerState(id));
-    }
-
-    airconsole.onMessage = function(device_id, data) {
-      if (!data || !data.action) return;
-      if (data.action === "request_state_recovery") { updateControllerState(device_id); return; }
-
-      if (data.action === "submit_query" && currentGameState === "SUGGESTING") {
-        const cleanedText = data.text.trim();
-        if (cleanedText.length === 0) return;
-        totalSuggestionsCount++;
-        const newSuggestion = { id: totalSuggestionsCount, text: cleanedText, votes: 0, voters: [] };
-        searchSuggestions.push(newSuggestion);
-        const node = document.createElement("div");
-        node.className = "suggestion-card";
-        node.innerText = `🔍 ${cleanedText}`;
-        suggestionList.appendChild(node);
-        broadcastStateChange();
+      function syncAll() {
+        const devices = airconsole.getConnectedDeviceIds();
+        devices.forEach(id => {
+          airconsole.message(id, { action: "sync_state", state: currentGameState, options: searchSuggestions });
+        });
       }
 
-      if (data.action === "advance_to_voting" && currentGameState === "SUGGESTING") {
-        if (searchSuggestions.length === 0) return; 
-        currentGameState = "VOTING";
-        stateBanner.innerText = "VOTING ACTIVE";
-        stateBanner.style.background = "#ea4335";
-        panelSuggesting.style.display = "none";
-        panelVoting.style.display = "flex";
-        renderVotingLayout();
-        broadcastStateChange();
-      }
+      airconsole.onConnect = function(device_id) { syncAll(); };
 
-      if (data.action === "cast_vote" && currentGameState === "VOTING") {
-        const item = searchSuggestions.find(s => s.id === data.optionId);
-        if (item && !item.voters.includes(device_id)) {
-          item.votes++;
-          item.voters.push(device_id);
-          renderVotingLayout();
-          broadcastStateChange();
+      airconsole.onMessage = function(device_id, data) {
+        if (!data || !data.action) return;
+
+        if (data.action === "request_state_recovery") {
+          syncAll();
         }
-      }
 
-      if (data.action === "reveal_winner" && currentGameState === "VOTING") {
-        searchSuggestions.sort((a, b) => b.votes - a.votes);
-        const winningQuery = searchSuggestions.length > 0 ? search
+        if (data.action === "submit_query" && currentGameState === "SUGGESTING") {
+          const item = { id: Date.now(), text: data.text, votes: 0 };
+          searchSuggestions.push(item);
+          const node = document.createElement("div");
+          node.className = "suggestion-card";
+          node.innerText = `🔍 ${data.text}`;
+          suggestionList.appendChild(node);
+          syncAll();
+        }
+
+        if (data.action === "advance_to_voting") {
+          currentGameState = "VOTING";
+          panelSuggesting.style.display = "none";
+          panelVoting.style.display = "flex";
+          syncAll();
+        }
+
+        if (data.action === "cast_vote") {
+          const item = searchSuggestions.find(s => s.id === data.optionId);
+          if (item) item.votes++;
+          syncAll();
+        }
+      };
+    };
+  </script>
+</body>
+</html>
