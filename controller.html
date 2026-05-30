@@ -168,7 +168,6 @@
     };
     const voteOptionsContainer = document.getElementById("vote-options-container");
 
-    // Explicit state recovery check on handshakes
     airconsole.onReady = function() {
       airconsole.message(AirConsole.SCREEN, { action: "request_state_recovery" });
     };
@@ -183,7 +182,7 @@
         }
       }
 
-      // Populate choice buttons dynamically and destroy the loading trap
+      // Bugfix: DOM generation technique replaces string clearing layouts
       if (data.state === "VOTING" && data.options) {
         voteOptionsContainer.innerHTML = "";
         data.options.forEach(opt => {
@@ -191,8 +190,7 @@
           btn.className = "btn vote-choice-btn";
           btn.innerText = opt.text;
           
-          btn.addEventListener("pointerdown", (e) => {
-            e.preventDefault();
+          btn.addEventListener("pointerdown", () => {
             airconsole.message(AirConsole.SCREEN, { action: "cast_vote", optionId: opt.id });
             voteOptionsContainer.innerHTML = "<div class='status-text' style='color:#ea4335;'>Ballot cast! Waiting for host...</div>";
           });
@@ -202,11 +200,11 @@
       }
     };
 
+    // Bugfix: Clean pointer bindings without passive scroll optimization warnings
     function bindClick(elementId, messageObject) {
       const el = document.getElementById(elementId);
       if (!el) return;
-      el.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
+      el.addEventListener("pointerdown", () => {
         airconsole.message(AirConsole.SCREEN, messageObject);
       });
     }
@@ -217,8 +215,7 @@
     bindClick("scroll-up", { action: "scroll", direction: "up" });
     bindClick("scroll-down", { action: "scroll", direction: "down" });
 
-    document.getElementById("action-type-query").addEventListener("pointerdown", (e) => {
-      e.preventDefault();
+    document.getElementById("action-type-query").addEventListener("pointerdown", () => {
       airconsole.showTextInput({
         placeholder: "What are we searching?",
         initial_value: ""
