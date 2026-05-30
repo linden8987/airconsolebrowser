@@ -2,14 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>3D Marble Race - Screen</title>
+  <title>3D marble game - Screen</title>
   <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #050508;
+      background-color: #030308;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
@@ -23,128 +23,339 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 25px;
+      padding: 30px;
       box-sizing: border-box;
     }
     .hud-text {
       color: #ffffff;
       font-size: 24px;
       font-weight: bold;
-      text-shadow: 0 0 10px rgba(0,255,255,0.8);
-      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
     }
-    #level-card {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: 1px solid #3b4f74;
-      align-self: flex-start;
+    #leaderboard {
+      background: rgba(15, 22, 38, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #1f293d;
+      margin-top: 10px;
+      min-width: 200px;
     }
-    #announcement-overlay {
+    .player-row {
+      color: #fff;
+      font-size: 18px;
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    #win-overlay {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      color: #ff007f;
-      font-size: 55px;
+      color: #ffff00;
+      font-size: 50px;
       font-weight: 900;
-      text-shadow: 0 0 20px rgba(255,0,127,0.8);
+      text-shadow: 0 0 30px rgba(255, 255, 0, 0.8);
       display: none;
       text-align: center;
-      background: rgba(5, 5, 8, 0.85);
-      padding: 30px 60px;
-      border-radius: 20px;
-      border: 3px solid #ff007f;
     }
   </style>
 </head>
 <body>
 
   <div id="ui-layer">
-    <div id="level-card" class="hud-text">LEVEL 1: NEON SPRINT</div>
-    <div id="announcement-overlay">PLAYER WINS LEVEL 1!</div>
+    <div>
+      <div id="lobby-status" class="hud-text">3D MARBLE GAME - WAITING FOR PLAYERS...</div>
+      <div id="leaderboard">
+        <div style="font-weight:bold; color:#00ffcc; border-bottom:1px solid #1f293d; padding-bottom:5px;">STANDINGS</div>
+        <div id="leaderboard-rows"></div>
+      </div>
+    </div>
+    <div id="win-overlay">VICTORY!</div>
   </div>
 
   <script>
-    const levelCard = document.getElementById("level-card");
-    const announcementOverlay = document.getElementById("announcement-overlay");
-    
     const airconsole = new AirConsole();
-
-    // Game Progression Variables
-    let currentLevelIndex = 0;
-    let gameActive = true;
     const players = {};
+    let powerups = [];
+    let gameActive = true;
     
-    // Track Asset Containers for dynamic clearing/loading
-    let trackMeshes = [];
-    let obstacleMeshes = [];
+    const trackLength = 500; 
+    const trackWidth = 14;
+    const ballRadius = 0.8;
 
-    // --- 5-Level Architecture Definitions ---
-    const levelConfigs = [
-      {
-        name: "LEVEL 1: NEON SPRINT",
-        finishZ: -290,
-        segments: [
-          { x: 0, y: -0.5, z: -150, w: 14, h: 1, d: 300 } // Long, wide safety track
-        ],
-        obstacles: []
-      },
-      {
-        name: "LEVEL 2: THE CHICANES",
-        finishZ: -290,
-        segments: [
-          // Alternating left/right staggered platforms forming a zig-zag road
-          { x: 0, y: -0.5, z: -40, w: 14, h: 1, d: 90 },
-          { x: -5, y: -0.5, z: -125, w: 12, h: 1, d: 90 },
-          { x: 5, y: -0.5, z: -210, w: 12, h: 1, d: 90 },
-          { x: 0, y: -0.5, z: -275, w: 14, h: 1, d: 50 }
-        ],
-        obstacles: []
-      },
-      {
-        name: "LEVEL 3: RAZOR'S EDGE",
-        finishZ: -280,
-        segments: [
-          { x: 0, y: -0.5, z: -145, w: 5, h: 1, d: 300 } // Ultra narrow, high risk of falling off
-        ],
-        obstacles: []
-      },
-      {
-        name: "LEVEL 4: BLOCKADE BOULEVARD",
-        finishZ: -290,
-        segments: [
-          { x: 0, y: -0.5, z: -150, w: 14, h: 1, d: 300 }
-        ],
-        // Static pillars placed right in the middle of the roadway
-        obstacles: [
-          { x: -3, y: 1, z: -60, w: 3, h: 3, d: 3, type: "static" },
-          { x: 3, y: 1, z: -110, w: 3, h: 3, d: 3, type: "static" },
-          { x: 0, y: 1, z: -160, w: 4, h: 3, d: 3, type: "static" },
-          { x: -4, y: 1, z: -210, w: 3, h: 3, d: 3, type: "static" },
-          { x: 4, y: 1, z: -250, w: 3, h: 3, d: 3, type: "static" }
-        ]
-      },
-      {
-        name: "LEVEL 5: THE GAUNTLET",
-        finishZ: -330,
-        segments: [
-          // Narrow roads with literal empty air gaps you have to fly over using momentum
-          { x: 0, y: -0.5, z: -40, w: 8, h: 1, d: 90 },
-          // Gap from Z=-85 to Z=-115
-          { x: 4, y: -0.5, z: -160, w: 6, h: 1, d: 90 },
-          // Gap from Z=-205 to Z=-235
-          { x: -4, y: -0.5, z: -285, w: 7, h: 1, d: 100 }
-        ],
-        // Moving speed-bumps that slide left and right across the path
-        obstacles: [
-          { x: 0, y: 0.8, z: -60, w: 3, h: 1.5, d: 2, type: "patrol", range: 2.5, speed: 0.05, currentDir: 1 },
-          { x: 4, y: 0.8, z: -140, w: 2, h: 1.5, d: 2, type: "patrol", range: 1.8, speed: 0.07, currentDir: 1 },
-          { x: -4, y: 0.8, z: -260, w: 2, h: 1.5, d: 2, type: "patrol", range: 2.0, speed: 0.06, currentDir: 1 }
-        ]
-      }
+    // Three.js Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x030308);
+    scene.fog = new THREE.FogExp2(0x030308, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(30, 50, 20);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // Build Track Platform
+    const trackGeo = new THREE.BoxGeometry(trackWidth, 1, trackLength);
+    const trackMat = new THREE.MeshStandardMaterial({ color: 0x121520, roughness: 0.3, metalness: 0.2 });
+    const trackMesh = new THREE.Mesh(trackGeo, trackMat);
+    trackMesh.position.set(0, -0.5, -trackLength / 2);
+    trackMesh.receiveShadow = true;
+    scene.add(trackMesh);
+
+    // Solid Neon Side Rails (For Wall Hits)
+    function createSolidRail(xPos) {
+      const railGeo = new THREE.BoxGeometry(0.5, 1.2, trackLength);
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x003322 });
+      const rail = new THREE.Mesh(railGeo, railMat);
+      rail.position.set(xPos, 0.6, -trackLength / 2);
+      scene.add(rail);
+    }
+    createSolidRail(-trackWidth / 2);
+    createSolidRail(trackWidth / 2);
+
+    // Finish Goal Pad
+    const finishGeo = new THREE.BoxGeometry(trackWidth, 1.1, 8);
+    const finishMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0x330011 });
+    const finishMesh = new THREE.Mesh(finishGeo, finishMat);
+    finishMesh.position.set(0, -0.45, -trackLength + 4);
+    scene.add(finishMesh);
+
+    // Power-up Spawning Framework
+    const pUpTypes = [
+      { type: 'jump', color: 0xffaa00, geo: new THREE.TorusGeometry(0.5, 0.15, 8, 24) },
+      { type: 'speed', color: 0x00ff00, geo: new THREE.OctahedronGeometry(0.6) },
+      { type: 'blast', color: 0xff00ff, geo: new THREE.ConeGeometry(0.5, 1, 4) }
     ];
 
-    // --- Three.js Setup Scene Environment ---
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050508
+    function spawnPowerups() {
+      powerups.forEach(p => scene.remove(p.mesh));
+      powerups = [];
+
+      for (let z = -40; z > -trackLength + 40; z -= 45) {
+        const config = pUpTypes[Math.floor(Math.random() * pUpTypes.length)];
+        const mat = new THREE.MeshBasicMaterial({ color: config.color, wireframe: false });
+        const mesh = new THREE.Mesh(config.geo, mat);
+        
+        const xPos = (Math.random() - 0.5) * (trackWidth - 4);
+        mesh.position.set(xPos, 1.2, z);
+        scene.add(mesh);
+
+        powerups.push({ type: config.type, mesh: mesh, active: true });
+      }
+    }
+    spawnPowerups();
+
+    // AirConsole Device Implementations
+    airconsole.onConnect = function(device_id) {
+      document.getElementById("lobby-status").innerHTML = "MATCH ACTIVE";
+      
+      const colors = [0x3388ff, 0xff3333, 0x33ff33, 0xffff33, 0xff33ff];
+      const assignedColor = colors[device_id % colors.length];
+
+      const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
+      const ballMat = new THREE.MeshStandardMaterial({ 
+        color: assignedColor, 
+        roughness: 0.1, 
+        metalness: 0.3 
+      });
+      const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+      ballMesh.castShadow = true;
+      ballMesh.position.set((Math.random() - 0.5) * 4, 1, 0);
+      scene.add(ballMesh);
+
+      players[device_id] = {
+        mesh: ballMesh,
+        nickname: airconsole.getNickname(device_id) || `Marble ${device_id}`,
+        vx: 0, vy: 0, vz: 0,
+        input: { forward: false, backward: false, left: false, right: false },
+        currentPowerup: null
+      };
+    };
+
+    airconsole.onDisconnect = function(device_id) {
+      if (players[device_id]) {
+        scene.remove(players[device_id].mesh);
+        delete players[device_id];
+      }
+    };
+
+    airconsole.onMessage = function(device_id, data) {
+      const p = players[device_id];
+      if (!p || !gameActive) return;
+
+      if (data.action === "input") {
+        p.input[data.dir] = data.value;
+      }
+      
+      if (data.action === "use_powerup") {
+        executePowerup(device_id, p);
+      }
+    };
+
+    // Power-up Action Execution Logic
+    function executePowerup(id, player) {
+      if (!player.currentPowerup) return;
+
+      if (player.currentPowerup === 'jump') {
+        player.vy = 0.38; 
+        airconsole.message(id, { action: "clear_inventory" });
+        player.currentPowerup = null;
+      } 
+      else if (player.currentPowerup === 'speed') {
+        player.vz -= 0.45; 
+        airconsole.message(id, { action: "clear_inventory" });
+        player.currentPowerup = null;
+      } 
+      else if (player.currentPowerup === 'blast') {
+        for (let targetId in players) {
+          if (targetId == id) continue;
+          const target = players[targetId];
+          const dist = player.mesh.position.distanceTo(target.mesh.position);
+          if (dist < 15) {
+            const dir = new THREE.Vector3().subVectors(target.mesh.position, player.mesh.position).normalize();
+            target.vx += dir.x * 0.35;
+            target.vz += dir.z * 0.35;
+            target.vy += 0.15; 
+          }
+        }
+        airconsole.message(id, { action: "clear_inventory" });
+        player.currentPowerup = null;
+      }
+    }
+
+    // Main Loop Updates
+    function animate() {
+      requestAnimationFrame(animate);
+
+      let leaderZ = 0;
+      let activeCount = 0;
+      let leaderboardData = [];
+
+      for (let id in players) {
+        const p = players[id];
+        activeCount++;
+
+        const speedFactor = 0.016;
+        if (p.input.forward)  p.vz -= speedFactor;
+        if (p.input.backward) p.vz += speedFactor;
+        if (p.input.left)     p.vx -= speedFactor;
+        if (p.input.right)    p.vx += speedFactor;
+
+        p.vx *= 0.96;
+        p.vz *= 0.95;
+
+        p.mesh.position.x += p.vx;
+        p.mesh.position.z += p.vz;
+        p.mesh.position.y += p.vy;
+
+        p.mesh.rotation.x += p.vz * 0.4;
+        p.mesh.rotation.z -= p.vx * 0.4;
+
+        const wallBoundX = (trackWidth / 2) - ballRadius;
+        if (p.mesh.position.y > 0.8) {
+          p.vy -= 0.015; 
+        } else {
+          if (Math.abs(p.mesh.position.x) <= (trackWidth / 2) && p.mesh.position.z <= 2 && p.mesh.position.z >= -trackLength) {
+            p.mesh.position.y = 0.8;
+            p.vy = 0;
+          } else {
+            p.vy -= 0.015; 
+          }
+        }
+
+        // Wall Hit Mechanic
+        if (Math.abs(p.mesh.position.x) >= wallBoundX && p.mesh.position.y <= 1.2) {
+          p.mesh.position.x = Math.sign(p.mesh.position.x) * wallBoundX;
+          
+          if (Math.abs(p.vx) > 0.04) {
+            p.vx = -p.vx * 1.5; 
+            p.vz *= 1.2; 
+            p.vy = 0.14; 
+          } else {
+            p.vx = -p.vx * 0.5;
+          }
+        }
+
+        if (p.mesh.position.y < -25) {
+          p.mesh.position.set((Math.random() - 0.5) * 4, 6, p.mesh.position.z + 20 > 0 ? 0 : p.mesh.position.z + 20);
+          p.vx = 0; p.vy = 0; p.vz = 0;
+        }
+
+        powerups.forEach(pUp => {
+          if (!pUp.active) return;
+          const dist = p.mesh.position.distanceTo(pUp.mesh.position);
+          if (dist < 1.6) {
+            pUp.active = false;
+            pUp.mesh.position.y = -100; 
+            p.currentPowerup = pUp.type;
+            airconsole.message(id, { action: "receive_powerup", type: pUp.type });
+          }
+        });
+
+        if (p.mesh.position.z <= -trackLength + 4 && gameActive) {
+          gameActive = false;
+          const winOverlay = document.getElementById("win-overlay");
+          winOverlay.innerHTML = `${p.nickname.toUpperCase()}<br>DOMINATES 3D MARBLE GAME!`;
+          winOverlay.style.display = "block";
+          
+          setTimeout(() => {
+            for (let rId in players) {
+              players[rId].mesh.position.set((Math.random() - 0.5) * 4, 1, 0);
+              players[rId].vx = 0; players[rId].vy = 0; players[rId].vz = 0;
+            }
+            spawnPowerups();
+            winOverlay.style.display = "none";
+            gameActive = true;
+          }, 5000);
+        }
+
+        if (p.mesh.position.z < leaderZ) leaderZ = p.mesh.position.z;
+
+        leaderboardData.push({ name: p.nickname, dist: Math.floor(Math.abs(p.mesh.position.z)) });
+      }
+
+      if (activeCount > 0) {
+        camera.position.z += ((leaderZ + 16) - camera.position.z) * 0.08;
+        camera.position.y += (8 - camera.position.y) * 0.08;
+        camera.position.x += (0 - camera.position.x) * 0.08;
+        camera.lookAt(new THREE.Vector3(0, 1, leaderZ - 6));
+      } else {
+        camera.position.set(0, 10, 18);
+        camera.lookAt(new THREE.Vector3(0, 0, -15));
+      }
+
+      powerups.forEach(pUp => {
+        if (pUp.active) {
+          pUp.mesh.rotation.y += 0.03;
+          pUp.mesh.rotation.x += 0.01;
+        }
+      });
+
+      leaderboardData.sort((a, b) => b.dist - a.dist);
+      const rowsContainer = document.getElementById("leaderboard-rows");
+      rowsContainer.innerHTML = "";
+      leaderboardData.forEach(row => {
+        rowsContainer.innerHTML += `<div class="player-row"><span>${row.name}</span><span>${row.dist}m</span></div>`;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
