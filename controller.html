@@ -2,234 +2,63 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Together Browser - Controller</title>
-  <script type="text/javascript" src="https://www.airconsole.com/api/api-1.7.0.js"></script>
+  <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0b0c10;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      overflow: hidden;
-      height: 100vh;
-      box-sizing: border-box;
-      color: #ffffff;
-    }
-
-    .screen-view {
-      display: none;
-      width: 100%;
-      height: 100%;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-    
-    /* Core Layout Global Interactive Buttons */
-    .btn {
-      background: #141724;
-      border: 3px solid #4285f4;
-      border-radius: 16px;
-      color: #4285f4;
-      font-size: 20px;
-      font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.15);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 20px;
-      width: 80%;
-      max-width: 400px;
-      margin: 10px 0;
-      text-align: center;
-      touch-action: manipulation;
-    }
-    .btn:active {
-      background-color: #4285f4;
-      color: #0b0c10;
-    }
-
-    /* Action Modifier Overrides */
-    .admin-btn {
-      border-color: #fbbc05;
-      color: #fbbc05;
-      box-shadow: 0 4px 15px rgba(251, 188, 5, 0.15);
-      font-size: 16px;
-      padding: 12px;
-      margin-top: 25px;
-    }
-    .admin-btn:active {
-      background-color: #fbbc05;
-      color: #0b0c10;
-    }
-    .reset-btn {
-      border-color: #ea4335;
-      color: #ea4335;
-      box-shadow: 0 4px 15px rgba(234, 67, 53, 0.15);
-    }
-    .reset-btn:active {
-      background-color: #ea4335;
-      color: #0b0c10;
-    }
-
-    /* Voting Mode Dynamic Target Layout Configurations */
-    #vote-options-container {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-y: auto;
-      max-height: 75vh;
-      gap: 10px;
-    }
-    .vote-choice-btn {
-      border-color: #ea4335;
-      color: #ea4335;
-      box-shadow: 0 4px 15px rgba(234, 67, 53, 0.1);
-    }
-    .vote-choice-btn:active {
-      background-color: #ea4335;
-      color: #0b0c10;
-    }
-
-    /* Navigation Fluid Scrolling Engine Panel Layouts */
-    .scroll-row {
-      display: flex;
-      gap: 20px;
-      width: 90%;
-      justify-content: center;
-    }
-    .scroll-btn {
-      flex: 1;
-      height: 120px;
-      font-size: 38px;
-      border-color: #34a853;
-      color: #34a853;
-      box-shadow: 0 4px 15px rgba(52, 168, 83, 0.15);
-    }
-    .scroll-btn:active {
-      background-color: #34a853;
-      color: #0b0c10;
-    }
-
-    .status-text {
-      color: #6a7485;
-      font-size: 16px;
-      margin-bottom: 15px;
-      text-transform: uppercase;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
+    body { background: #0b0c10; color: white; text-align: center; font-family: sans-serif; }
+    .view { display: none; }
+    canvas { width: 90%; height: 300px; background: black; border: 2px solid #4285f4; }
+    .btn { padding: 25px; margin: 20px; background: #4285f4; border-radius: 12px; }
   </style>
 </head>
-<body>
-
-  <div id="view-loading" class="screen-view" style="display: flex;">
-    <div class="status-text">Syncing with Main Screen...</div>
+<body onload="init()">
+  <div id="view-vote" class="view" style="display:block;">
+    <div class="btn" onclick="castVote()">Vote</div>
   </div>
-
-  <div id="view-suggesting" class="screen-view">
-    <div class="status-text">Phase 1: Suggest Terms</div>
-    <div id="action-type-query" class="btn">⌨️ Suggest Google Search</div>
-    <div id="action-go-to-voting" class="btn admin-btn">Lock Submissions & Vote ➔</div>
+  <div id="view-pong" class="view">
+    <canvas id="canvas"></canvas>
   </div>
-
-  <div id="view-voting" class="screen-view">
-    <div class="status-text">Phase 2: Cast Ballots</div>
-    <div id="vote-options-container">
-      </div>
-    <div id="action-go-to-browsing" class="btn admin-btn">Process Winner & Search ➔</div>
-  </div>
-
-  <div id="view-browsing" class="screen-view">
-    <div class="status-text">Phase 3: Live Shared Google</div>
-    <div class="scroll-row">
-      <div id="scroll-up" class="btn scroll-btn">▲</div>
-      <div id="scroll-down" class="btn scroll-btn">▼</div>
-    </div>
-    <div id="action-reset" class="btn admin-btn reset-btn">♻️ Next Search Match</div>
+  <div id="view-try-again" class="view">
+    <div class="btn" onclick="resetGame()">Try Again</div>
   </div>
 
   <script>
-    const airconsole = new AirConsole({ orientation: AirConsole.ORIENTATION_LANDSCAPE });
-
-    const views = {
-      LOADING: document.getElementById("view-loading"),
-      SUGGESTING: document.getElementById("view-suggesting"),
-      VOTING: document.getElementById("view-voting"),
-      BROWSING: document.getElementById("view-browsing")
-    };
-    const voteOptionsContainer = document.getElementById("vote-options-container");
-
-    airconsole.onReady = function() {
-      airconsole.message(AirConsole.SCREEN, { action: "request_state_recovery" });
-    };
-
-    airconsole.onMessage = function(device_id, data) {
-      if (!data || data.action !== "sync_state") return;
-
-      // Universal safe view switcher
-      for (let stateKey in views) {
-        if (views[stateKey]) {
-          views[stateKey].style.display = (stateKey === data.state) ? "flex" : "none";
+    var airconsole;
+    function init() {
+      airconsole = new AirConsole();
+      airconsole.onMessage = function(from, data) {
+        if (data.action === "voting_complete") {
+          document.getElementById("view-vote").style.display = "none";
+          document.getElementById("view-pong").style.display = "block";
+          startPong();
         }
-      }
-
-      // Bugfix: DOM generation technique replaces string clearing layouts
-      if (data.state === "VOTING" && data.options) {
-        voteOptionsContainer.innerHTML = "";
-        data.options.forEach(opt => {
-          const btn = document.createElement("div");
-          btn.className = "btn vote-choice-btn";
-          btn.innerText = opt.text;
-          
-          btn.addEventListener("pointerdown", () => {
-            airconsole.message(AirConsole.SCREEN, { action: "cast_vote", optionId: opt.id });
-            voteOptionsContainer.innerHTML = "<div class='status-text' style='color:#ea4335;'>Ballot cast! Waiting for host...</div>";
-          });
-          
-          voteOptionsContainer.appendChild(btn);
-        });
-      }
-    };
-
-    // Bugfix: Clean pointer bindings without passive scroll optimization warnings
-    function bindClick(elementId, messageObject) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      el.addEventListener("pointerdown", () => {
-        airconsole.message(AirConsole.SCREEN, messageObject);
-      });
+      };
     }
 
-    bindClick("action-go-to-voting", { action: "advance_to_voting" });
-    bindClick("action-go-to-browsing", { action: "reveal_winner" });
-    bindClick("action-reset", { action: "reset_round" });
-    bindClick("scroll-up", { action: "scroll", direction: "up" });
-    bindClick("scroll-down", { action: "scroll", direction: "down" });
+    function castVote() {
+      airconsole.message(AirConsole.SCREEN, {action: "cast_vote"});
+      document.getElementById("view-vote").style.display = "none";
+      document.getElementById("view-pong").style.display = "block";
+      startPong();
+    }
 
-    document.getElementById("action-type-query").addEventListener("pointerdown", () => {
-      airconsole.showTextInput({
-        placeholder: "What are we searching?",
-        initial_value: ""
-      });
-    });
-
-    airconsole.onTextInput = function(text) {
-      if (text && text.trim().length > 0) {
-        airconsole.message(AirConsole.SCREEN, {
-          action: "submit_query",
-          text: text
-        });
+    function startPong() {
+      let canvas = document.getElementById("canvas");
+      let ctx = canvas.getContext("2d");
+      function loop() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(10, 50, 10, 50); // Paddle
+        requestAnimationFrame(loop);
       }
-    };
+      loop();
+    }
+
+    function resetGame() {
+      airconsole.message(AirConsole.SCREEN, {action: "reset"});
+      document.getElementById("view-try-again").style.display = "none";
+      document.getElementById("view-vote").style.display = "block";
+    }
   </script>
 </body>
 </html>
