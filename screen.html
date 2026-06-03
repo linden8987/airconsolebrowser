@@ -1,59 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Together Browser - Master Screen</title>
     <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
-    <style>
-        body { margin: 0; background: #090a0f; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        .screen-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; background: #090a0f; }
-        #browser-frame { width: 100%; height: 100%; border: none; background: white; display: none; }
-    </style>
-</head>
-<body onload="init()">
-    <div id="panel-suggesting" class="screen-panel"><h1>What should we Google?</h1><div id="suggestion-list"></div></div>
-    <div id="panel-voting" class="screen-panel"><h1>Cast Your Ballots!</h1><div id="voting-grid"></div></div>
-    <iframe id="browser-frame"></iframe>
-
     <script>
         var airconsole;
-        var screenState = "SUGGESTING";
+        var suggestions = []; // Stores {text, votes}
+        var screenState = "SUGGEST";
 
         var transitions = {
-            SUGGESTING: () => {
-                screenState = "SUGGESTING";
-                document.getElementById("panel-suggesting").style.display = "flex";
-                document.getElementById("panel-voting").style.display = "none";
-                document.getElementById("browser-frame").style.display = "none";
+            SUGGEST: () => {
+                screenState = "SUGGEST";
+                // Show suggestion input UI
             },
-            VOTING: () => {
-                screenState = "VOTING";
-                document.getElementById("panel-suggesting").style.display = "none";
-                document.getElementById("panel-voting").style.display = "flex";
+            VOTE: () => {
+                screenState = "VOTE";
+                // Show poll UI
             },
-            BROWSING: (url) => {
-                screenState = "BROWSING";
-                document.getElementById("panel-voting").style.display = "none";
-                const frame = document.getElementById("browser-frame");
-                frame.style.display = "block";
-                frame.src = url;
+            RESULTS: (query) => {
+                screenState = "RESULTS";
+                document.getElementById("browser-frame").src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(query);
             }
         };
 
         function init() {
             airconsole = new AirConsole();
-            
-            airconsole.onReady = function() {
-                transitions.SUGGESTING(); // Force initial state
-            };
-
-            airconsole.onMessage = function(device_id, data) {
-                if (!data) return;
-                if (data.action === "submit_query") { /* Add logic */ }
-                if (data.action === "advance") transitions.VOTING();
-                if (data.action === "reveal") transitions.BROWSING("https://www.google.com/search?igu=1&q=" + encodeURIComponent(data.query));
+            airconsole.onMessage = function(from, data) {
+                if (data.action === "submit") {
+                    suggestions.push({text: data.text, votes: 0});
+                    airconsole.broadcast({action: "update_suggestions", list: suggestions});
+                }
+                if (data.action === "vote") {
+                    suggestions[data.index].votes++;
+                    // Broadcast vote update
+                }
+                if (data.action === "start_vote") transitions.VOTE();
+                if (data.action === "reveal") {
+                    let winner = suggestions.sort((a,b) => b.votes - a.votes)[0];
+                    transitions.RESULTS(winner.text);
+                }
             };
         }
     </script>
+</head>
+<body onload="init()">
+    <iframe id="browser-frame" style="width:100%; height:100vh;"></iframe>
 </body>
 </html>
