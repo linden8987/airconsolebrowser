@@ -2,43 +2,36 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <title>games.</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { background: #0b0c10; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-    .game-btn { display: block; width: 90%; padding: 20px; margin: 15px auto; background: #1f4068; border: 2px solid #4285f4; color: white; border-radius: 12px; font-size: 18px; }
-    #home-btn { position: fixed; top: 10px; right: 10px; padding: 10px; background: #ff4d4d; border-radius: 50%; }
+    body { margin: 0; background: #090a0f; color: white; height: 100vh; overflow: hidden; }
+    #launcher-ui { text-align: center; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #game-frame { width: 100vw; height: 100vh; border: none; display: none; }
   </style>
 </head>
 <body>
-  <div id="hub-view">
+  <div id="launcher-ui">
     <h1>games.</h1>
-    <button class="game-btn" onclick="launch('browsescreen.html', 'browsecontroller.html')">Browse</button>
   </div>
-
-  <button id="home-btn" style="display:none;" onclick="goHome()">🏠</button>
+  <iframe id="game-frame"></iframe>
 
   <script>
     var airconsole = new AirConsole();
 
-    function launch(screenFile, controllerFile) {
-      airconsole.message(AirConsole.SCREEN, {action: "launch", screenFile: screenFile});
-      window.location.href = controllerFile;
-    }
-
-    // If the controller is the Master, show the home button
-    function checkMaster() {
-      if (airconsole.getDeviceId() === airconsole.getMasterControllerDeviceId()) {
-        document.getElementById("home-btn").style.display = "block";
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "launch_game") {
+        document.getElementById('launcher-ui').style.display = 'none';
+        let frame = document.getElementById('game-frame');
+        frame.style.display = 'block';
+        frame.src = data.screenFile;
       }
-    }
-
-    function goHome() {
-      airconsole.message(AirConsole.SCREEN, {action: "go_home"});
-      window.location.href = "controller.html";
-    }
-
-    // Check status on load
-    checkMaster();
+      if (data.action === "go_home") {
+        document.getElementById('game-frame').style.display = 'none';
+        document.getElementById('launcher-ui').style.display = 'flex';
+        document.getElementById('game-frame').src = "";
+      }
+    };
   </script>
 </body>
 </html>
