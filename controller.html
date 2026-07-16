@@ -6,11 +6,16 @@
   <style>
     body { background: #0b0c10; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
     .game-btn { display: block; width: 90%; padding: 20px; margin: 15px auto; background: #1f4068; border: 2px solid #4285f4; color: white; border-radius: 12px; font-size: 18px; }
+    #home-btn { position: fixed; top: 10px; right: 10px; padding: 10px; background: #ff4d4d; border-radius: 50%; }
   </style>
 </head>
 <body>
-  <h1>games.</h1>
-  <button class="game-btn" onclick="launch('browsescreen.html', 'browsecontroller.html')">Browse</button>
+  <div id="hub-view">
+    <h1>games.</h1>
+    <button class="game-btn" onclick="launch('browsescreen.html', 'browsecontroller.html')">Browse</button>
+  </div>
+
+  <button id="home-btn" style="display:none;" onclick="goHome()">🏠</button>
 
   <script>
     var airconsole = new AirConsole();
@@ -20,11 +25,20 @@
       window.location.href = controllerFile;
     }
 
-    airconsole.onMessage = function(from, data) {
-      if (data.action === "navigate_home") {
-        window.location.href = "controller.html";
+    // If the controller is the Master, show the home button
+    function checkMaster() {
+      if (airconsole.getDeviceId() === airconsole.getMasterControllerDeviceId()) {
+        document.getElementById("home-btn").style.display = "block";
       }
-    };
+    }
+
+    function goHome() {
+      airconsole.message(AirConsole.SCREEN, {action: "go_home"});
+      window.location.href = "controller.html";
+    }
+
+    // Check status on load
+    checkMaster();
   </script>
 </body>
 </html>
