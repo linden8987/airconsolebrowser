@@ -2,55 +2,52 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Together Browser - Dashboard</title>
+  <title>Together Browser - Master Screen</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { 
-      margin: 0; background: linear-gradient(135deg, #090a0f, #16213e); 
-      color: white; font-family: 'Segoe UI', sans-serif; height: 100vh;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-    }
-    .suggestion-box { font-size: 24px; padding: 20px; margin: 15px; background: rgba(255,255,255,0.1); border-radius: 12px; border: 1px solid #4285f4; }
+    body { margin: 0; background: linear-gradient(135deg, #090a0f, #16213e); color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    #main-app { width: 80%; text-align: center; }
+    #status-tracker { font-size: 20px; color: #4285f4; margin-bottom: 20px; }
+    .suggestion-box { font-size: 24px; padding: 15px; margin: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid #4285f4; }
     #browser-frame { width: 90%; height: 75vh; border: 8px solid #16213e; border-radius: 15px; display: none; }
   </style>
 </head>
 <body>
   <div id="main-app">
     <h1>What should we Google?</h1>
+    <div id="status-tracker">Players Ready: 0 / 0</div>
     <div id="list-area"></div>
   </div>
   <iframe id="browser-frame"></iframe>
 
   <script>
     var airconsole = new AirConsole();
-    var suggestions = []; // Stores {text, votes}
-    var readyCount = 0;
+    var suggestions = [];
+    var readyPlayers = {};
 
     airconsole.onMessage = function(from, data) {
       if (data.action === "submit") {
-        suggestions.push({text: data.text, votes: 0});
-        updateDisplay();
-      }
-      if (data.action === "vote_for") {
-        // Increment specific suggestion vote
-        suggestions[data.index].votes++;
+        suggestions.push({text: data.text});
+        renderSuggestions();
       }
       if (data.action === "done_voting") {
-        readyCount++;
-        // Trigger once everyone signals they are done
-        if (readyCount >= airconsole.getControllerDeviceIds().length) {
-          triggerSearch();
-        }
+        readyPlayers[from] = true;
+        let total = airconsole.getControllerDeviceIds().length;
+        let ready = Object.keys(readyPlayers).length;
+        document.getElementById('status-tracker').innerText = "Players Ready: " + ready + " / " + total;
+        airconsole.broadcast({ action: "status_update", ready: ready, total: total });
+      }
+      if (data.action === "reveal_results") {
+        document.getElementById('main-app').style.display = 'none';
+        let frame = document.getElementById('browser-frame');
+        frame.style.display = 'block';
+        frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(suggestions[0].text);
       }
     };
 
-    function triggerSearch() {
-      document.getElementById('main-app').style.display = 'none';
-      let winner = suggestions.sort((a,b) => b.votes - a.votes)[0];
-      let frame = document.getElementById('browser-frame');
-      frame.style.display = 'block';
-      frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(winner.text);
-      airconsole.broadcast({action: "start_minigame"});
+    function renderSuggestions() {
+      document.getElementById('list-area').innerHTML = suggestions.map(s => 
+        `<div class="suggestion-box">${s.text}</div>`).join('');
     }
   </script>
 </body>
