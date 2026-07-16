@@ -4,60 +4,62 @@
   <meta charset="utf-8">
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { background: #0b0c10; color: white; text-align: center; font-family: sans-serif; }
+    body { background: #16213e; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
     .view { display: none; }
-    canvas { width: 90%; height: 300px; background: black; border: 2px solid #4285f4; }
-    .btn { padding: 25px; margin: 20px; background: #4285f4; border-radius: 12px; }
+    input { width: 85%; padding: 15px; border-radius: 8px; border: none; margin-bottom: 10px; }
+    button { width: 90%; padding: 15px; background: #4285f4; color: white; border: none; border-radius: 8px; margin: 5px; }
+    #pong-canvas { width: 100%; height: 300px; background: black; border: 2px solid #4285f4; }
   </style>
 </head>
-<body onload="init()">
+<body>
   <div id="view-vote" class="view" style="display:block;">
-    <div class="btn" onclick="castVote()">Vote</div>
+    <input type="text" id="vote-input" placeholder="Enter suggestion...">
+    <button onclick="submit()">Submit</button>
+    <button onclick="finish()">I'm Finished</button>
   </div>
   <div id="view-pong" class="view">
-    <canvas id="canvas"></canvas>
-  </div>
-  <div id="view-try-again" class="view">
-    <div class="btn" onclick="resetGame()">Try Again</div>
+    <canvas id="pong-canvas" width="300" height="300"></canvas>
+    <button id="btn-final-search" style="display:none;" onclick="triggerGlobalSearch()">Perform Search</button>
   </div>
 
   <script>
-    var airconsole;
-    function init() {
-      airconsole = new AirConsole();
-      airconsole.onMessage = function(from, data) {
-        if (data.action === "voting_complete") {
-          document.getElementById("view-vote").style.display = "none";
-          document.getElementById("view-pong").style.display = "block";
-          startPong();
-        }
-      };
+    var airconsole = new AirConsole();
+
+    function submit() {
+      let text = document.getElementById('vote-input').value;
+      airconsole.message(AirConsole.SCREEN, {action: "submit", text: text});
+      document.getElementById('vote-input').value = "";
     }
 
-    function castVote() {
-      airconsole.message(AirConsole.SCREEN, {action: "cast_vote"});
-      document.getElementById("view-vote").style.display = "none";
-      document.getElementById("view-pong").style.display = "block";
+    function finish() {
+      airconsole.message(AirConsole.SCREEN, {action: "done_voting"});
+      document.getElementById("view-vote").style.display = 'none';
+      document.getElementById("view-pong").style.display = 'block';
       startPong();
     }
 
-    function startPong() {
-      let canvas = document.getElementById("canvas");
-      let ctx = canvas.getContext("2d");
-      function loop() {
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.fillRect(10, 50, 10, 50); // Paddle
-        requestAnimationFrame(loop);
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "status_update") {
+        var isMaster = (airconsole.getDeviceId() === airconsole.getMasterControllerDeviceId());
+        if (isMaster && data.ready >= data.total) {
+          document.getElementById("btn-final-search").style.display = "block";
+        }
       }
-      loop();
+    };
+
+    function triggerGlobalSearch() {
+      airconsole.message(AirConsole.SCREEN, {action: "reveal_results"});
     }
 
-    function resetGame() {
-      airconsole.message(AirConsole.SCREEN, {action: "reset"});
-      document.getElementById("view-try-again").style.display = "none";
-      document.getElementById("view-vote").style.display = "block";
+    function startPong() {
+      let canvas = document.getElementById('pong-canvas');
+      let ctx = canvas.getContext('2d');
+      function draw() {
+        ctx.fillStyle = "black"; ctx.fillRect(0,0, canvas.width, canvas.height);
+        ctx.fillStyle = "white"; ctx.fillRect(10, 50, 10, 50); // Paddle
+        requestAnimationFrame(draw);
+      }
+      draw();
     }
   </script>
 </body>
