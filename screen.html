@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>games.</title>
+  <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
+  <style>
+    body { margin: 0; background: #090a0f; color: white; font-family: sans-serif; height: 100vh; overflow: hidden; }
+    #launcher-ui { text-align: center; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    
+    #menu-bar {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 40px; background: #16213e;
+      border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+      display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    #menu-bar button { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+    
+    #game-frame { width: 100vw; height: 100vh; border: none; display: none; }
+  </style>
+</head>
+<body>
+  <div id="menu-bar">
+    <button onclick="goHome()">🏠</button>
+  </div>
+
+  <div id="launcher-ui">
+    <h1>games.</h1>
+  </div>
+  <iframe id="game-frame"></iframe>
+
+  <script>
+    var airconsole = new AirConsole();
+
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "launch") {
+        document.getElementById('launcher-ui').style.display = 'none';
+        document.getElementById('menu-bar').style.display = 'flex';
+        let frame = document.getElementById('game-frame');
+        frame.style.display = 'block';
+        frame.src = data.screenFile;
+      }
+    };
+
+    function goHome() {
+      document.getElementById('game-frame').style.display = 'none';
+      document.getElementById('menu-bar').style.display = 'none';
+      document.getElementById('launcher-ui').style.display = 'flex';
+      document.getElementById('game-frame').src = "";
+      airconsole.broadcast({action: "navigate_home"});
+    }
+  </script>
+</body>
+</html>
