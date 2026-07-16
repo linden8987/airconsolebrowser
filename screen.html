@@ -2,36 +2,54 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>games.</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { margin: 0; background: #090a0f; color: white; height: 100vh; overflow: hidden; }
-    #launcher-ui { text-align: center; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    #game-frame { width: 100vw; height: 100vh; border: none; display: none; }
+    body { background: #0b0c10; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+    .game-btn { display: block; width: 90%; padding: 20px; margin: 15px auto; background: #1f4068; border: 2px solid #4285f4; color: white; border-radius: 12px; }
+    #home-btn { padding: 15px 30px; background: #e74c3c; border-radius: 8px; margin-top: 20px; display: none; }
   </style>
 </head>
 <body>
-  <div id="launcher-ui">
+  <div id="hub-ui">
     <h1>games.</h1>
+    <button class="game-btn" onclick="launchGame('browsescreen.html', 'browsecontroller.html')">Browse</button>
   </div>
-  <iframe id="game-frame"></iframe>
+
+  <button id="home-btn" onclick="goHome()">Back to Hub</button>
 
   <script>
     var airconsole = new AirConsole();
 
-    airconsole.onMessage = function(from, data) {
-      if (data.action === "launch") {
-        document.getElementById('launcher-ui').style.display = 'none';
-        let frame = document.getElementById('game-frame');
-        frame.style.display = 'block';
-        frame.src = data.screenFile;
+    function launchGame(screenFile, controllerFile) {
+      // Broadcast to everyone: Move to the game
+      airconsole.broadcast({action: "launch_game", screenFile: screenFile});
+      window.location.href = controllerFile;
+    }
+
+    // Logic for the Game Controller pages
+    function initGameController() {
+      // Show Home button only if Master[span_1](start_span)[span_1](end_span)
+      if (airconsole.getDeviceId() === airconsole.getMasterControllerDeviceId()) {
+        document.getElementById("home-btn").style.display = "inline-block";
       }
-      if (data.action === "go_home") {
-        document.getElementById('game-frame').style.display = 'none';
-        document.getElementById('launcher-ui').style.display = 'flex';
-        document.getElementById('game-frame').src = "";
+      document.getElementById("hub-ui").style.display = "none";
+    }
+
+    function goHome() {
+      airconsole.message(AirConsole.SCREEN, {action: "go_home"});
+      airconsole.broadcast({action: "navigate_home"});
+    }
+
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "navigate_home") {
+        window.location.href = "controller.html";
       }
     };
+    
+    // If we are on a game controller page, initialize the UI
+    if (window.location.pathname.includes("browsecontroller.html")) {
+      initGameController();
+    }
   </script>
 </body>
 </html>
