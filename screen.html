@@ -2,47 +2,55 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Together Browser - Master Screen</title>
+  <title>Together Browser - Dashboard</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { margin: 0; background: #090a0f; color: #fff; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-    .panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
-    #browser-frame { width: 100%; height: 100%; border: none; background: white; }
+    body { 
+      margin: 0; background: linear-gradient(135deg, #090a0f, #16213e); 
+      color: white; font-family: 'Segoe UI', sans-serif; height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .suggestion-box { font-size: 24px; padding: 20px; margin: 15px; background: rgba(255,255,255,0.1); border-radius: 12px; border: 1px solid #4285f4; }
+    #browser-frame { width: 90%; height: 75vh; border: 8px solid #16213e; border-radius: 15px; display: none; }
   </style>
 </head>
-<body onload="init()">
-  <div id="panel-suggesting" class="panel" style="display: flex;"><h1>What should we Google?</h1><div id="suggestion-list"></div></div>
-  <div id="panel-voting" class="panel"><h1>Cast Your Ballots!</h1><div id="voting-grid"></div></div>
-  <iframe id="browser-frame" class="panel"></iframe>
+<body>
+  <div id="main-app">
+    <h1>What should we Google?</h1>
+    <div id="list-area"></div>
+  </div>
+  <iframe id="browser-frame"></iframe>
 
   <script>
-    var airconsole;
-    var searchSuggestions = [];
-    var votesReceived = 0;
+    var airconsole = new AirConsole();
+    var suggestions = []; // Stores {text, votes}
+    var readyCount = 0;
 
-    function init() {
-      airconsole = new AirConsole();
-      airconsole.onMessage = function(from, data) {
-        if (data.action === "submit") {
-          searchSuggestions.push({id: Date.now(), text: data.text, votes: 0});
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "submit") {
+        suggestions.push({text: data.text, votes: 0});
+        updateDisplay();
+      }
+      if (data.action === "vote_for") {
+        // Increment specific suggestion vote
+        suggestions[data.index].votes++;
+      }
+      if (data.action === "done_voting") {
+        readyCount++;
+        // Trigger once everyone signals they are done
+        if (readyCount >= airconsole.getControllerDeviceIds().length) {
+          triggerSearch();
         }
-        if (data.action === "cast_vote") {
-          votesReceived++;
-          if (votesReceived >= airconsole.getControllerDeviceIds().length) {
-            let winner = searchSuggestions.sort((a,b) => b.votes - a.votes)[0];
-            document.getElementById("panel-voting").style.display = "none";
-            let frame = document.getElementById("browser-frame");
-            frame.style.display = "block";
-            frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(winner.text);
-            airconsole.broadcast({action: "voting_complete"});
-          }
-        }
-        if (data.action === "reset") {
-          searchSuggestions = []; votesReceived = 0;
-          document.getElementById("browser-frame").style.display = "none";
-          document.getElementById("panel-suggesting").style.display = "flex";
-        }
-      };
+      }
+    };
+
+    function triggerSearch() {
+      document.getElementById('main-app').style.display = 'none';
+      let winner = suggestions.sort((a,b) => b.votes - a.votes)[0];
+      let frame = document.getElementById('browser-frame');
+      frame.style.display = 'block';
+      frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(winner.text);
+      airconsole.broadcast({action: "start_minigame"});
     }
   </script>
 </body>
