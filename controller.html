@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
+  <style>
+    body { background: #0b0c10; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+    .game-btn { display: block; width: 90%; padding: 20px; margin: 15px auto; background: #1f4068; border: 2px solid #4285f4; color: white; border-radius: 12px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>games.</h1>
+  <button class="game-btn" onclick="launch('browsescreen.html', 'browsecontroller.html')">Browse</button>
+
+  <script>
+    var airconsole = new AirConsole();
+
+    function launch(screenFile, controllerFile) {
+      airconsole.message(AirConsole.SCREEN, {action: "launch", screenFile: screenFile});
+      window.location.href = controllerFile;
+    }
+
+    airconsole.onMessage = function(from, data) {
+      if (data.action === "navigate_home") {
+        window.location.href = "controller.html";
+      }
+    };
+  </script>
+</body>
+</html>
