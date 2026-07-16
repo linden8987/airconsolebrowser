@@ -5,11 +5,11 @@
   <title>Together Browser - Master Screen</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { margin: 0; background: linear-gradient(135deg, #090a0f, #16213e); color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    body { margin: 0; background: linear-gradient(135deg, #090a0f, #16213e); color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     #main-app { width: 80%; text-align: center; }
-    #status-tracker { font-size: 20px; color: #4285f4; margin-bottom: 20px; }
     .suggestion-box { font-size: 24px; padding: 15px; margin: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid #4285f4; }
     #browser-frame { width: 90%; height: 75vh; border: 8px solid #16213e; border-radius: 15px; display: none; }
+    #search-btn { padding: 20px 40px; font-size: 24px; background: #4285f4; border: none; border-radius: 10px; color: white; cursor: pointer; display: none; }
   </style>
 </head>
 <body>
@@ -17,6 +17,7 @@
     <h1>What should we Google?</h1>
     <div id="status-tracker">Players Ready: 0 / 0</div>
     <div id="list-area"></div>
+    <button id="search-btn" onclick="executeSearch()">Perform Search</button>
   </div>
   <iframe id="browser-frame"></iframe>
 
@@ -35,15 +36,20 @@
         let total = airconsole.getControllerDeviceIds().length;
         let ready = Object.keys(readyPlayers).length;
         document.getElementById('status-tracker').innerText = "Players Ready: " + ready + " / " + total;
-        airconsole.broadcast({ action: "status_update", ready: ready, total: total });
-      }
-      if (data.action === "reveal_results") {
-        document.getElementById('main-app').style.display = 'none';
-        let frame = document.getElementById('browser-frame');
-        frame.style.display = 'block';
-        frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(suggestions[0].text);
+        
+        // Only show the search button if the Master Controller is ready
+        if (ready >= total && from === airconsole.getMasterControllerDeviceId()) {
+          document.getElementById('search-btn').style.display = 'inline-block';
+        }
       }
     };
+
+    function executeSearch() {
+      document.getElementById('main-app').style.display = 'none';
+      let frame = document.getElementById('browser-frame');
+      frame.style.display = 'block';
+      frame.src = "https://www.google.com/search?igu=1&q=" + encodeURIComponent(suggestions[0].text);
+    }
 
     function renderSuggestions() {
       document.getElementById('list-area').innerHTML = suggestions.map(s => 
