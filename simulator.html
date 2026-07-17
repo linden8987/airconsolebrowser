@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AirConsole Simulator</title>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      body { font-family: sans-serif; background: #1f1f1f; color: white; margin: 0; }
+      .menu { background: black; padding: 10px; text-align: center; }
+      #content { display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; }
+      .device { border: 2px solid white; background: #3b3b3b; margin: 10px; }
+      iframe { border: none; background: white; display: block; }
+      #load { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1f1f1f; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div class="menu">
+    <button onclick="addDevice('16:9')">Add Controller</button>
+    <button onclick="location.reload()">Refresh</button>
+</div>
+
+<div id="content">
+    <div class="device">
+        <iframe id="screen_iframe" src="" style="width: 960px; height: 540px;"></iframe>
+    </div>
+</div>
+
+<div id="load">
+    <h2>Enter Game URL</h2>
+    <input id="url" size="50" placeholder="https://your-game-url.com">
+    <br><br>
+    <button onclick="loadGameFromInput()">Load Game</button>
+</div>
+
+<script>
+    const devices = [];
+    const resolutions = {
+        "16:9": { width: 960, height: 540 },
+        "3:2": { width: 810, height: 540 }
+    };
+
+    function loadGameFromInput() {
+        const url = document.getElementById('url').value;
+        if (!url) return;
+        
+        document.getElementById('screen_iframe').src = url;
+        document.getElementById('load').style.display = 'none';
+        
+        // Simulating the connection handshake
+        window.setTimeout(() => {
+            console.log("AirConsole Simulator: Game Loaded");
+            addDevice('3:2');
+        }, 1000);
+    }
+
+    function addDevice(format) {
+        const i = devices.length + 1;
+        const container = $("<div class='device'></div>");
+        const iframe = $("<iframe></iframe>").attr({
+            src: "about:blank",
+            id: "controller-" + i
+        }).css({
+            width: resolutions[format].width / 2 + "px",
+            height: resolutions[format].height / 2 + "px"
+        });
+        
+        container.append(`<div>Controller ${i}</div>`).append(iframe);
+        $("#content").append(container);
+        devices.push(iframe);
+    }
+</script>
+</body>
+</html>
