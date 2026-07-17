@@ -35,13 +35,13 @@
 
 <script>
     let baseUrl = "";
+    const controllers = [];
 
     function loadGame() {
         let input = document.getElementById('base_url').value;
         if (!input.endsWith('/')) input += '/';
         baseUrl = input;
 
-        // Load the screen
         document.getElementById('screen_iframe').src = baseUrl + "screen.html";
         document.getElementById('load').style.display = 'none';
     }
@@ -49,16 +49,27 @@
     function addController() {
         if (!baseUrl) return;
         
-        const i = document.querySelectorAll('.controller-iframe').length + 1;
-        const container = $("<div class='device'></div>");
+        const i = controllers.length + 1;
         const iframe = $("<iframe></iframe>").addClass('controller-iframe').attr({
             src: baseUrl + "controller.html",
             style: "width: 320px; height: 480px;"
         });
         
-        container.append(`<div>Controller ${i}</div>`).append(iframe);
+        const container = $("<div class='device'></div>").append(`<div>Controller ${i}</div>`).append(iframe);
         $("#content").append(container);
+        controllers.push(iframe[0]);
     }
+
+    // Message Hub: Listens to controllers and relays to screen
+    window.addEventListener("message", (event) => {
+        const screen = document.getElementById('screen_iframe').contentWindow;
+        
+        // Ensure the message is coming from a controller iframe
+        if (event.data && event.data.type === 'controller_input') {
+            console.log("Relaying to screen:", event.data);
+            screen.postMessage(event.data, "*");
+        }
+    });
 </script>
 </body>
 </html>
