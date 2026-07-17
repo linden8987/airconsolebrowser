@@ -2,36 +2,63 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>games.</title>
   <script type="text/javascript" src="https://airconsole.com/api/airconsole-1.11.0.js"></script>
   <style>
-    body { margin: 0; background: #090a0f; color: white; height: 100vh; overflow: hidden; }
-    #launcher-ui { text-align: center; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    #game-frame { width: 100vw; height: 100vh; border: none; display: none; }
+    body { background: #0b0c10; color: white; font-family: sans-serif; padding: 0; margin: 0; }
+    
+    /* Curved Header Bar (Only visible when a game is active) */
+    #game-header {
+      display: none; 
+      background: #ffffff; padding: 15px; color: black;
+      border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+      justify-content: space-between; align-items: center;
+    }
+
+    /* Hub UI */
+    #hub-ui { text-align: center; padding: 20px; }
+    .game-btn { display: block; width: 90%; padding: 20px; margin: 15px auto; background: #1f4068; border: 2px solid #4285f4; color: white; border-radius: 12px; }
   </style>
 </head>
 <body>
-  <div id="launcher-ui">
-    <h1>games.</h1>
+
+  <!-- Curved Header Bar -->
+  <div id="game-header">
+    <div id="player-count">PLAYERS: 0</div>
+    <button onclick="goHome()" style="background:none; border:none; font-size:24px;">🏠</button>
   </div>
-  <iframe id="game-frame"></iframe>
+
+  <!-- Hub UI -->
+  <div id="hub-ui">
+    <h1>games.</h1>
+    <button class="game-btn" onclick="launchGame('browsescreen.html')">Browse</button>
+  </div>
 
   <script>
     var airconsole = new AirConsole();
 
-    airconsole.onMessage = function(from, data) {
-      if (data.action === "launch_game") {
-        document.getElementById('launcher-ui').style.display = 'none';
-        let frame = document.getElementById('game-frame');
-        frame.style.display = 'block';
-        frame.src = data.screenFile;
+    function launchGame(screenFile) {
+      // 1. Tell the screen to launch the game
+      airconsole.message(AirConsole.SCREEN, {action: "launch_game", screenFile: screenFile});
+      
+      // 2. Switch UI to "Game Active" mode
+      document.getElementById('hub-ui').style.display = 'none';
+      
+      // 3. Show header only if Master
+      if (airconsole.getDeviceId() === airconsole.getMasterControllerDeviceId()) {
+        document.getElementById('game-header').style.display = 'flex';
+        let count = airconsole.getControllerDeviceIds().length;
+        document.getElementById('player-count').innerText = "PLAYERS: " + count;
       }
-      if (data.action === "go_home") {
-        document.getElementById('game-frame').style.display = 'none';
-        document.getElementById('launcher-ui').style.display = 'flex';
-        document.getElementById('game-frame').src = "";
-      }
-    };
+    }
+
+    function goHome() {
+      // 1. Tell screen to go back
+      airconsole.message(AirConsole.SCREEN, {action: "go_home"});
+      
+      // 2. Reset UI to Hub mode
+      document.getElementById('game-header').style.display = 'none';
+      document.getElementById('hub-ui').style.display = 'block';
+    }
   </script>
 </body>
 </html>
