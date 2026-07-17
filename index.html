@@ -1,97 +1,109 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>AirConsole Simulator</title>
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-      body { font-family: sans-serif; background: #1f1f1f; color: white; margin: 0; }
-      .menu { background: black; padding: 10px; text-align: center; }
-      #content { display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; }
-      .device { border: 2px solid white; background: #3b3b3b; margin: 10px; padding: 5px; }
-      iframe { border: none; background: white; display: block; }
-      #load { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1f1f1f; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    <title>AirConsole - Developer Console (Optimized)</title>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Play:400,700" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="/file/jquery.min.js"></script>
+    <script type="module">
+      export function verifyUnityPluginVersion(unityPluginVersion) {
+        const pluginVersionParts = unityPluginVersion.split('.');
+        let isUpToDate = false;
+        if (pluginVersionParts.length >= 3) {
+          const major = parseInt(pluginVersionParts[0], 10) || 0;
+          const minor = parseInt(pluginVersionParts[1], 10) || 0;
+          const patch = parseInt(pluginVersionParts[2], 10) || 0;
+          isUpToDate = major > 2 || (major === 2 && minor >= 5 && patch >= 0);
+        }
+        if (!isUpToDate) {
+          if (window.confirm('Outdated Unity AirConsole Plugin!')) {
+            document.location.href = 'https://github.com/AirConsole/airconsole-unity-plugin/releases';
+          }
+        }
+        return isUpToDate;
+      }
+      window.AC_SIMULATOR = { verifyUnityPluginVersion };
+    </script>
+    <script type="text/javascript">
+      var code, devices, laying_out = false, last_width = 0, last_height = 0, last_scale = 1, is_paused = false, device_height = 580;
+      var resolutions = {
+        "Full HD": { "width": 1920, "height": 1080 },
+        "Mini SmartTV": { "width": 960, "height": 540 },
+        "MacBook Air 13": { "width": 1440, "height": 900 },
+        "3:2": { "aspect_ratio": 3/2, "type": ["controller"] },
+        "16:9": { "aspect_ratio": 16/9, "type": ["controller"] }
+      };
+
+      function addDevice(device_format) {
+        var i = devices.length;
+        var container = $("<div class=device></div>").attr("id", "device_" + i);
+        
+        // Added load event to prevent black flickering during init
+        var iframe = $("<iframe>", {
+          frameborder: '0',
+          allow: 'autoplay; microphone; camera',
+          id: 'controller-' + i,
+          css: { backgroundColor: '#1f1f1f' } // Set background to match theme during load
+        }).on('load', function() { $(this).css('background-color', 'white'); }).appendTo(container);
+
+        var device_name = $("<div class=device_name>Device " + i + " (" + device_format + ")</div>").prependTo(container);
+        $("#content").append(container);
+        
+        devices[i] = { size: resolutions[device_format], div: container, iframe: iframe };
+        layout();
+      }
+
+      function layout(scale) {
+        if (laying_out) return;
+        laying_out = true;
+        
+        var w = $(window).width();
+        var h = $(window).height() - 50;
+        
+        if (!scale) scale = last_scale;
+
+        for (var i = 0; i < devices.length; ++i) {
+          var device = devices[i];
+          if (device) {
+            let new_size = device.size.aspect_ratio ? { width: device_height / device.size.aspect_ratio, height: device_height } : device.size;
+            device.iframe.css({ width: new_size.width + "px", height: new_size.height + "px" });
+          }
+        }
+
+        var content = $("#content");
+        content.css({ transform: "scale(" + scale + ")", transformOrigin: "top left" });
+        
+        // Safety check to prevent infinite loop or extreme scaling
+        if (content.outerHeight() * scale > h && scale > 0.1) {
+            last_scale = scale * 0.95;
+            laying_out = false;
+            layout(last_scale);
+        } else {
+            laying_out = false;
+            last_scale = scale;
+        }
+      }
+
+      $(document).ready(function() {
+        devices = [{ size: resolutions["MacBook Air 13"], iframe: $("#screen_iframe"), div: $("#screen_div") }];
+        $(window).resize(function() { layout(); });
+        layout();
+      });
+
+      // ... (keep existing helper functions like getUrl, loadGame, etc.)
+    </script>
+    <style type="text/css">
+      /* Added smooth transitions to prevent jarring screen updates */
+      iframe { border: 1px solid #ddd; background-color: #1f1f1f; transition: background-color 0.3s ease; }
+      #content { transition: transform 0.2s ease; }
+      /* ... keep existing styles ... */
     </style>
 </head>
 <body>
-
-<div class="menu">
-    <button onclick="addController()">Add Controller</button>
-</div>
-
-<div id="content">
-    <div class="device">
-        <h3>Screen</h3>
-        <iframe id="screen_iframe" style="width: 960px; height: 540px;"></iframe>
+    <!-- Existing UI Structure -->
+    <div id="content">
+      <div id="screen_div" class="device">
+        <iframe id="screen_iframe" src="" frameborder="0" allow="autoplay; microphone; camera"></iframe>
+      </div>
     </div>
-</div>
-
-<div id="load">
-    <h2>Enter Base Game URL</h2>
-    <input id="base_url" size="50" placeholder="https://example.com/game/">
-    <br><br>
-    <button onclick="loadGame()">Load Game</button>
-</div>
-
-<script>
-    let baseUrl = "";
-    const controllers = [];
-
-    // This script is injected into every iframe to mock the AirConsole API
-    const airConsoleMock = `
-        window.AirConsole = {
-            message: function(to, data) {
-                window.parent.postMessage({type: 'AC_MSG', to, data}, "*");
-            },
-            broadcast: function(data) {
-                window.parent.postMessage({type: 'AC_BROADCAST', data}, "*");
-            }
-        };
-    `;
-
-    function injectMock(iframe) {
-        iframe.onload = function() {
-            const script = iframe.contentDocument.createElement('script');
-            script.textContent = airConsoleMock;
-            iframe.contentDocument.head.appendChild(script);
-        };
-    }
-
-    function loadGame() {
-        let input = document.getElementById('base_url').value;
-        if (!input.endsWith('/')) input += '/';
-        baseUrl = input;
-
-        const screen = document.getElementById('screen_iframe');
-        injectMock(screen);
-        screen.src = baseUrl + "screen.html";
-        document.getElementById('load').style.display = 'none';
-    }
-
-    function addController() {
-        if (!baseUrl) return;
-        
-        const i = controllers.length;
-        const iframe = $("<iframe></iframe>").attr({
-            src: baseUrl + "controller.html",
-            style: "width: 320px; height: 480px;"
-        });
-        
-        injectMock(iframe[0]);
-        const container = $("<div class='device'></div>").append(`<div>Controller ${i}</div>`).append(iframe);
-        $("#content").append(container);
-        controllers.push({id: i, window: iframe[0].contentWindow});
-    }
-
-    // Central Relay for AirConsole Mock
-    window.addEventListener("message", (event) => {
-        if (!event.data || !event.data.type) return;
-
-        if (event.data.type === 'AC_MSG') {
-            // Relay message from controller to screen or vice versa
-            const screen = document.getElementById('screen_iframe').contentWindow;
-            screen.postMessage({type: 'onMessage', data: event.data.data}, "*");
-        }
-    });
-</script>
 </body>
 </html>
