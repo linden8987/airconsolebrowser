@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <title>AirConsole Simulator</title>
-    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
       body { font-family: sans-serif; background: #1f1f1f; color: white; margin: 0; }
@@ -37,37 +36,60 @@
     let baseUrl = "";
     const controllers = [];
 
+    // This script is injected into every iframe to mock the AirConsole API
+    const airConsoleMock = `
+        window.AirConsole = {
+            message: function(to, data) {
+                window.parent.postMessage({type: 'AC_MSG', to, data}, "*");
+            },
+            broadcast: function(data) {
+                window.parent.postMessage({type: 'AC_BROADCAST', data}, "*");
+            }
+        };
+    `;
+
+    function injectMock(iframe) {
+        iframe.onload = function() {
+            const script = iframe.contentDocument.createElement('script');
+            script.textContent = airConsoleMock;
+            iframe.contentDocument.head.appendChild(script);
+        };
+    }
+
     function loadGame() {
         let input = document.getElementById('base_url').value;
         if (!input.endsWith('/')) input += '/';
         baseUrl = input;
 
-        document.getElementById('screen_iframe').src = baseUrl + "screen.html";
+        const screen = document.getElementById('screen_iframe');
+        injectMock(screen);
+        screen.src = baseUrl + "screen.html";
         document.getElementById('load').style.display = 'none';
     }
 
     function addController() {
         if (!baseUrl) return;
         
-        const i = controllers.length + 1;
-        const iframe = $("<iframe></iframe>").addClass('controller-iframe').attr({
+        const i = controllers.length;
+        const iframe = $("<iframe></iframe>").attr({
             src: baseUrl + "controller.html",
             style: "width: 320px; height: 480px;"
         });
         
+        injectMock(iframe[0]);
         const container = $("<div class='device'></div>").append(`<div>Controller ${i}</div>`).append(iframe);
         $("#content").append(container);
-        controllers.push(iframe[0]);
+        controllers.push({id: i, window: iframe[0].contentWindow});
     }
 
-    // Message Hub: Listens to controllers and relays to screen
+    // Central Relay for AirConsole Mock
     window.addEventListener("message", (event) => {
-        const screen = document.getElementById('screen_iframe').contentWindow;
-        
-        // Ensure the message is coming from a controller iframe
-        if (event.data && event.data.type === 'controller_input') {
-            console.log("Relaying to screen:", event.data);
-            screen.postMessage(event.data, "*");
+        if (!event.data || !event.data.type) return;
+
+        if (event.data.type === 'AC_MSG') {
+            // Relay message from controller to screen or vice versa
+            const screen = document.getElementById('screen_iframe').contentWindow;
+            screen.postMessage({type: 'onMessage', data: event.data.data}, "*");
         }
     });
 </script>
