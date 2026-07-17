@@ -1,9 +1,18 @@
 <html lang="en">
 <head>
-    <title>AirConsole - Developer Console (Optimized)</title>
+    <title>AirConsole - Developer Console</title>
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link href="https://fonts.googleapis.com/css?family=Play:400,700" rel="stylesheet" type="text/css">
     <script type="text/javascript" src="/file/jquery.min.js"></script>
+    <style type="text/css">
+        body { font-family: 'Play', sans-serif; background-color: #2c3e50; color: white; margin: 0; overflow: hidden; }
+        #toolbar { height: 50px; background-color: #34495e; display: flex; align-items: center; padding: 0 10px; border-bottom: 2px solid #2c3e50; }
+        #content { padding: 20px; transition: transform 0.2s ease; }
+        .device { display: inline-block; vertical-align: top; margin: 10px; background: white; padding: 5px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .device_name { font-size: 12px; color: #333; margin-bottom: 5px; text-align: center; }
+        iframe { border: 1px solid #ddd; background-color: #1f1f1f; transition: background-color 0.3s ease; }
+        button { cursor: pointer; padding: 8px 12px; margin-right: 5px; }
+    </style>
     <script type="module">
       export function verifyUnityPluginVersion(unityPluginVersion) {
         const pluginVersionParts = unityPluginVersion.split('.');
@@ -24,7 +33,7 @@
       window.AC_SIMULATOR = { verifyUnityPluginVersion };
     </script>
     <script type="text/javascript">
-      var code, devices, laying_out = false, last_width = 0, last_height = 0, last_scale = 1, is_paused = false, device_height = 580;
+      var devices = [], laying_out = false, last_scale = 1, device_height = 580;
       var resolutions = {
         "Full HD": { "width": 1920, "height": 1080 },
         "Mini SmartTV": { "width": 960, "height": 540 },
@@ -36,16 +45,14 @@
       function addDevice(device_format) {
         var i = devices.length;
         var container = $("<div class=device></div>").attr("id", "device_" + i);
-        
-        // Added load event to prevent black flickering during init
         var iframe = $("<iframe>", {
           frameborder: '0',
           allow: 'autoplay; microphone; camera',
           id: 'controller-' + i,
-          css: { backgroundColor: '#1f1f1f' } // Set background to match theme during load
+          css: { backgroundColor: '#1f1f1f' }
         }).on('load', function() { $(this).css('background-color', 'white'); }).appendTo(container);
 
-        var device_name = $("<div class=device_name>Device " + i + " (" + device_format + ")</div>").prependTo(container);
+        $("<div class=device_name>Device " + i + " (" + device_format + ")</div>").prependTo(container);
         $("#content").append(container);
         
         devices[i] = { size: resolutions[device_format], div: container, iframe: iframe };
@@ -56,9 +63,7 @@
         if (laying_out) return;
         laying_out = true;
         
-        var w = $(window).width();
         var h = $(window).height() - 50;
-        
         if (!scale) scale = last_scale;
 
         for (var i = 0; i < devices.length; ++i) {
@@ -72,7 +77,6 @@
         var content = $("#content");
         content.css({ transform: "scale(" + scale + ")", transformOrigin: "top left" });
         
-        // Safety check to prevent infinite loop or extreme scaling
         if (content.outerHeight() * scale > h && scale > 0.1) {
             last_scale = scale * 0.95;
             laying_out = false;
@@ -88,20 +92,16 @@
         $(window).resize(function() { layout(); });
         layout();
       });
-
-      // ... (keep existing helper functions like getUrl, loadGame, etc.)
     </script>
-    <style type="text/css">
-      /* Added smooth transitions to prevent jarring screen updates */
-      iframe { border: 1px solid #ddd; background-color: #1f1f1f; transition: background-color 0.3s ease; }
-      #content { transition: transform 0.2s ease; }
-      /* ... keep existing styles ... */
-    </style>
 </head>
 <body>
-    <!-- Existing UI Structure -->
+    <div id="toolbar">
+        <button onclick="addDevice('16:9')">Add Controller (16:9)</button>
+        <button onclick="window.location.reload()">Reset</button>
+    </div>
     <div id="content">
       <div id="screen_div" class="device">
+        <div class="device_name">Main Screen</div>
         <iframe id="screen_iframe" src="" frameborder="0" allow="autoplay; microphone; camera"></iframe>
       </div>
     </div>
