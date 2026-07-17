@@ -8,7 +8,7 @@
       body { font-family: sans-serif; background: #1f1f1f; color: white; margin: 0; }
       .menu { background: black; padding: 10px; text-align: center; }
       #content { display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; }
-      .device { border: 2px solid white; background: #3b3b3b; margin: 10px; }
+      .device { border: 2px solid white; background: #3b3b3b; margin: 10px; padding: 5px; }
       iframe { border: none; background: white; display: block; }
       #load { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1f1f1f; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
@@ -16,58 +16,48 @@
 <body>
 
 <div class="menu">
-    <button onclick="addDevice('16:9')">Add Controller</button>
-    <button onclick="location.reload()">Refresh</button>
+    <button onclick="addController()">Add Controller</button>
 </div>
 
 <div id="content">
     <div class="device">
-        <iframe id="screen_iframe" src="" style="width: 960px; height: 540px;"></iframe>
+        <h3>Screen</h3>
+        <iframe id="screen_iframe" style="width: 960px; height: 540px;"></iframe>
     </div>
 </div>
 
 <div id="load">
-    <h2>Enter Game URL</h2>
-    <input id="url" size="50" placeholder="https://your-game-url.com">
+    <h2>Enter Base Game URL</h2>
+    <input id="base_url" size="50" placeholder="https://example.com/game/">
     <br><br>
-    <button onclick="loadGameFromInput()">Load Game</button>
+    <button onclick="loadGame()">Load Game</button>
 </div>
 
 <script>
-    const devices = [];
-    const resolutions = {
-        "16:9": { width: 960, height: 540 },
-        "3:2": { width: 810, height: 540 }
-    };
+    let baseUrl = "";
 
-    function loadGameFromInput() {
-        const url = document.getElementById('url').value;
-        if (!url) return;
-        
-        document.getElementById('screen_iframe').src = url;
+    function loadGame() {
+        let input = document.getElementById('base_url').value;
+        if (!input.endsWith('/')) input += '/';
+        baseUrl = input;
+
+        // Load the screen
+        document.getElementById('screen_iframe').src = baseUrl + "screen.html";
         document.getElementById('load').style.display = 'none';
-        
-        // Simulating the connection handshake
-        window.setTimeout(() => {
-            console.log("AirConsole Simulator: Game Loaded");
-            addDevice('3:2');
-        }, 1000);
     }
 
-    function addDevice(format) {
-        const i = devices.length + 1;
+    function addController() {
+        if (!baseUrl) return;
+        
+        const i = document.querySelectorAll('.controller-iframe').length + 1;
         const container = $("<div class='device'></div>");
-        const iframe = $("<iframe></iframe>").attr({
-            src: "about:blank",
-            id: "controller-" + i
-        }).css({
-            width: resolutions[format].width / 2 + "px",
-            height: resolutions[format].height / 2 + "px"
+        const iframe = $("<iframe></iframe>").addClass('controller-iframe').attr({
+            src: baseUrl + "controller.html",
+            style: "width: 320px; height: 480px;"
         });
         
         container.append(`<div>Controller ${i}</div>`).append(iframe);
         $("#content").append(container);
-        devices.push(iframe);
     }
 </script>
 </body>
